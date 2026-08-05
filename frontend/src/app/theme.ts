@@ -1,0 +1,47 @@
+import type { ThemeConfig } from "antd";
+
+import { designTokens } from "./designTokens";
+
+export const technicalFontFamily = 'ui-monospace, SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Noto Sans Mono", monospace';
+
+export const nexoraTheme: ThemeConfig = {
+  token: {
+    colorPrimary: designTokens.primary,
+    colorSuccess: designTokens.success,
+    colorWarning: designTokens.warning,
+    colorError: designTokens.danger,
+    colorInfo: designTokens.info,
+    colorBgLayout: designTokens.backgroundApp,
+    colorBgContainer: designTokens.backgroundCard,
+    colorBorder: designTokens.border,
+    colorText: designTokens.textPrimary,
+    colorTextSecondary: designTokens.textSecondary,
+    colorTextDisabled: designTokens.textDisabled,
+    colorLink: designTokens.textLink,
+    borderRadius: 8,
+    controlHeight: 44,
+    fontSize: 14,
+    boxShadow: "none",
+    boxShadowSecondary: "none",
+  },
+  components: {
+    Button: { primaryShadow: "none", dangerShadow: "none" },
+    Card: { bodyPadding: 20, headerHeight: 52, headerBg: designTokens.backgroundCard },
+    Drawer: { colorBgElevated: designTokens.backgroundCard },
+    Input: { activeBorderColor: designTokens.primary, hoverBorderColor: designTokens.primary },
+    Menu: {
+      itemHeight: 48,
+      itemHoverBg: designTokens.backgroundHover,
+      itemSelectedBg: designTokens.backgroundSelected,
+      itemSelectedColor: designTokens.primary,
+    },
+    Table: {
+      borderColor: designTokens.border,
+      cellPaddingBlock: 14,
+      cellPaddingInline: 16,
+      headerBg: designTokens.backgroundHover,
+      headerColor: designTokens.textPrimary,
+      rowHoverBg: designTokens.backgroundHover,
+    },
+  },
+};

@@ -1,0 +1,131 @@
+"""Secure libvirt XML parsing and local structured edits."""
+
+from nexora.xml.advanced_config import (
+    AdvancedConfig,
+    CpuPinning,
+    NumaCell,
+    VsockInfo,
+    WatchdogInfo,
+    read_advanced_config,
+)
+from nexora.xml.advanced_devices import (
+    AdvancedDeviceChange,
+    AdvancedDeviceError,
+    apply_advanced_device_change,
+)
+from nexora.xml.cdrom import (
+    CdromConfigError,
+    CdromHttpChange,
+    CdromMediaChange,
+    apply_cdrom_http,
+    apply_cdrom_media,
+)
+from nexora.xml.cpu import CpuTopologyChange, apply_cpu_topology, read_cpu_topology
+from nexora.xml.cputune import (
+    CpuTuneChange,
+    CpuTuneError,
+    EmulatorPinChange,
+    VcpuPinChange,
+    apply_cputune_change,
+    read_cputune,
+)
+from nexora.xml.disk import (
+    DiskAttachChange,
+    DiskConfigError,
+    DiskDetachChange,
+    apply_disk_attach,
+    apply_disk_detach,
+    verify_disk_attach_result,
+)
+from nexora.xml.document import LibvirtXmlDocument, XmlFingerprint, XmlLimits
+from nexora.xml.errors import CpuTopologyError, XmlSafetyError, XmlStructureError
+from nexora.xml.memory import MemoryConfigChange, apply_memory_config, read_memory_config
+from nexora.xml.network import (
+    InterfaceAttachChange,
+    InterfaceDetachChange,
+    InterfaceUpdateChange,
+    NetworkConfigError,
+    apply_interface_attach,
+    apply_interface_detach,
+    apply_interface_update,
+    verify_interface_attach_result,
+)
+from nexora.xml.numa import (
+    NumaCellChange,
+    NumaChange,
+    NumaConfigError,
+    apply_numa_change,
+    read_numa_config,
+)
+from nexora.xml.peripherals import (
+    HostDeviceChange,
+    PeripheralConfigError,
+    SharedDirectoryChange,
+    apply_host_device_attach,
+    apply_host_device_detach,
+    apply_shared_directory_attach,
+    apply_shared_directory_detach,
+    verify_shared_directory_attach_result,
+)
+
+__all__ = [
+    "AdvancedConfig",
+    "AdvancedDeviceChange",
+    "AdvancedDeviceError",
+    "CdromConfigError",
+    "CdromHttpChange",
+    "CdromMediaChange",
+    "CpuPinning",
+    "CpuTopologyChange",
+    "CpuTopologyError",
+    "CpuTuneChange",
+    "CpuTuneError",
+    "DiskAttachChange",
+    "DiskConfigError",
+    "DiskDetachChange",
+    "EmulatorPinChange",
+    "HostDeviceChange",
+    "InterfaceAttachChange",
+    "InterfaceDetachChange",
+    "InterfaceUpdateChange",
+    "LibvirtXmlDocument",
+    "MemoryConfigChange",
+    "NetworkConfigError",
+    "NumaCell",
+    "NumaCellChange",
+    "NumaChange",
+    "NumaConfigError",
+    "PeripheralConfigError",
+    "SharedDirectoryChange",
+    "VcpuPinChange",
+    "VsockInfo",
+    "WatchdogInfo",
+    "XmlFingerprint",
+    "XmlLimits",
+    "XmlSafetyError",
+    "XmlStructureError",
+    "apply_advanced_device_change",
+    "apply_cdrom_http",
+    "apply_cdrom_media",
+    "apply_cpu_topology",
+    "apply_cputune_change",
+    "apply_disk_attach",
+    "apply_disk_detach",
+    "apply_host_device_attach",
+    "apply_host_device_detach",
+    "apply_interface_attach",
+    "apply_interface_detach",
+    "apply_interface_update",
+    "apply_memory_config",
+    "apply_numa_change",
+    "apply_shared_directory_attach",
+    "apply_shared_directory_detach",
+    "read_advanced_config",
+    "read_cpu_topology",
+    "read_cputune",
+    "read_memory_config",
+    "read_numa_config",
+    "verify_disk_attach_result",
+    "verify_interface_attach_result",
+    "verify_shared_directory_attach_result",
+]

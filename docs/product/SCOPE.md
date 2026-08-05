@@ -46,6 +46,15 @@
 - 多发行版与 aarch64 验证、安全审计、性能和可访问性。
 - 备份恢复、升级回滚、排障、供应链和发布文档。
 
+## P7 剩余首期能力
+
+- 24 小时 VM 指标历史与节点性能。
+- Watchdog、vsock、CPU cache tuning 安全写入。
+- 关机 VM PCI/USB Host Device 直通。
+- 授权路径根内的 virtiofs/9p 共享目录。
+- Cloud Image 静态 IPv6 NoCloud 配置。
+- aarch64 与 Rocky 之外 RHEL 系发行版验证暂缓。
+
 ## 首期明确不实现
 
 - 多用户、RBAC、多租户、LDAP/OIDC/SAML。
@@ -67,4 +76,3 @@
 5. 扫描 `/library` 中 ISO、qcow2 和 raw。
 6. CPU 结构化修改、XML Diff 和未知元素保留测试。
 7. 只读展示物理接口、Bridge、VLAN 与 VM 网卡拓扑。
-

@@ -15,6 +15,10 @@ token 绑定管理员 Session、host、VM 和用途，短时有效且只保存�
 
 克隆生成新 UUID 和 MAC，复制全部文件磁盘及 NVRAM，不使用 backing-file 链接克隆。
 复制前检查目标架构、存储、空间与同名冲突；每个文件和总任务均展示进度并校验。
+revision 0017 计划绑定源 VM hash、目标 Pool hash、派生路径和目标 XML。双 SSH relay
+只在内存中转发 1 MiB chunk；任务 partial 经 size/SHA-256 后无覆盖发布。失败不删除
+源或已发布最终文件，恢复只复用内容完全匹配的目标。详细实现边界见
+`docs/development/2026-07-29-vm-full-clone-design.md`。
 
 ## 关机迁移
 
@@ -36,4 +40,3 @@ iSCSI 和复杂外部快照只展示限制。
 
 源端清理是独立危险操作，必须逐项确认定义、磁盘和 NVRAM；不得作为迁移成功的
 隐式步骤。
-

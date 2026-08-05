@@ -25,7 +25,12 @@
 
 - `../SECURITY.md`：威胁模型和安全门禁。
 - `testing/ACCEPTANCE.md`：功能、容量、可靠性和安全验收。
+- `testing/INTEGRATION_ENVIRONMENT.md`：专用嵌套 KVM 节点与安全测试约束。
 - `../TEST_STATUS.md`：实际测试证据和未验证项。
+
+## 部署运维
+
+- `operations/README.md`：部署、备份、恢复、升级、回滚和排障入口。
 
 ## 治理与恢复
 
@@ -34,4 +39,3 @@
 - `../PROJECT_STATUS.md`：当前状态和精确恢复入口。
 - `../CHANGELOG.md`：面向版本的变更记录。
 - `development/`：设计与开发过程文档。
-

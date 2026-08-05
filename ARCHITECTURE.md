@@ -9,7 +9,8 @@ Nexora 是轻量级、无 Agent、单容器、多节点 libvirt/KVM Web 管理�
 
 ```text
 Browser
-  -> FastAPI + Jinja2 + HTMX
+  -> React + Ant Design
+     -> FastAPI internal Session API
      -> SQLite data/task/audit layer
      -> embedded task coordinator
      -> RemoteExecutor
@@ -33,7 +34,7 @@ Browser
 
 ## 模块边界
 
-- `web`：页面、HTMX 和内部 API，不承载关键后台工作。
+- `web`：React 页面外壳、内部 Session API 和迁移期旧页面，不承载关键后台工作。
 - `auth`：单管理员、Session、CSRF、登录限速和安全设置。
 - `remote`：SSH、Host Key、命令适配器、文件传输和隧道。
 - `inventory`：只读探测、资源规范化、索引和带外变更检测。
@@ -43,6 +44,14 @@ Browser
 - `media`：受限目录扫描、索引、Range 服务和凭据。
 - `tasks`：持久化任务、步骤、锁、lease、恢复和取消。
 - `audit`：不可变安全与操作事件。
+
+虚拟机写入使用 `host_id + domain UUID` 作为作用域。任务在写前获取带租期的
+数据库资源锁、重新读取远端 Domain、校验缓存基线与危险状态，写后再次读取并验证
+目标状态；命令成功但权威状态不符仍视为失败。
+
+所有可导航产品页面由 React 与 Ant Design 接管。历史 `/manage/*` 地址继续兼容，
+但返回同一 React Shell；配置预检仍复用后端计划、Diff、确认、资源版本和任务门禁，
+不在用户可见页面混用 React 与 Jinja。
 
 ## 权威专题
 
@@ -65,4 +74,3 @@ Browser
 4. 任务数据库事务不跨远端 I/O。
 5. 未知资源和未知 XML 必须保留并可见。
 6. 节点移除不删除任何业务资源。
-

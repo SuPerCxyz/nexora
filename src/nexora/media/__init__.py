@@ -1,0 +1,1 @@
+"""Platform media library indexing."""

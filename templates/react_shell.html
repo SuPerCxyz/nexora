@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csp-nonce" content="{{ csp_nonce }}">
+    {% if auth_mode %}<meta name="nexora-auth-mode" content="{{ auth_mode }}">{% endif %}
+    {% if auth_error %}<meta name="nexora-auth-error" content="{{ auth_error }}">{% endif %}
+    {% if auth_csrf %}<meta name="nexora-auth-csrf" content="{{ auth_csrf }}">{% endif %}
+    <title>Nexora</title>
+    <link rel="stylesheet" href="/static/css/design-tokens.css" nonce="{{ csp_nonce }}">
+    {% for href in assets.preloads %}
+    <link rel="modulepreload" href="{{ href }}" nonce="{{ csp_nonce }}">
+    {% endfor %}
+    {% for href in assets.styles %}
+    <link rel="stylesheet" href="{{ href }}" nonce="{{ csp_nonce }}">
+    {% endfor %}
+  </head>
+  <body>
+    <div id="nexora-root"></div>
+    <script type="module" src="{{ assets.script }}" nonce="{{ csp_nonce }}"></script>
+  </body>
+</html>

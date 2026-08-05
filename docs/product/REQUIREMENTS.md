@@ -13,9 +13,9 @@ Nexora 不替代 OpenStack、OpenNebula、CloudStack、Proxmox 或 vCenter。
 ## 技术栈
 
 - Python 3.12 或项目锁定的更新稳定版本
-- FastAPI、Starlette、Uvicorn、Jinja2、HTMX
-- 少量原生 JavaScript；Alpine.js 仅用于必要局部状态
-- Tabler UI、Tabler Icons
+- FastAPI、Starlette、Uvicorn 和同源内部 Session API
+- React、TypeScript、Vite、Ant Design 6 和经安全审计的客户端路由方案
+- Jinja2 仅保留为服务端 Shell/过渡响应实现，不承载可导航产品页面
 - SQLAlchemy 2、Alembic、SQLite
 - lxml、libvirt 客户端、OpenSSH 客户端
 - noVNC、websockify、CodeMirror 6、xterm.js、Cytoscape.js
@@ -66,9 +66,9 @@ VM 删除默认仅 undefine。磁盘、NVRAM、源端迁移资源等必须逐项
 
 ## 页面与体验
 
-- 非 SPA，服务端渲染配合 HTMX。
-- 默认浅亮、低饱和、细边框、小圆角、轻阴影。
+- React 页面支持客户端路由、刷新和深链接；FastAPI 仍是唯一业务服务。
+- 默认浅亮、低饱和、浅边框和小圆角；默认不使用装饰性阴影。
+- 全站颜色来自固定语义 Design Token；禁止渐变、玻璃拟态、霓虹和发光效果。
 - 技术字段统一等宽字体，并提供全局等宽字体模式。
 - 状态不得只依赖颜色；基础目标为 WCAG 2.1 AA。
 - 静态资源本地打包，运行时不依赖公共 CDN。
-

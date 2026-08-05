@@ -36,6 +36,11 @@ Pool/Volume、libvirt 网络、宿主网络、PCI/USB 和节点设备。首次�
 - 能力和支持状态
 - 用户标签、备注与来源审计
 
+每种资源类型使用独立 scan generation。只有该类型的完整远端枚举成功后，才能原子
+提交新 generation 并标记未再次出现的资源为 missing；超时、截断、解析错误或连接
+中断只记录 failed scan，不得改变上一代资源可见性。inactive Pool 无法枚举卷时，
+其已有 Volume 索引保持上一代状态，不得误报删除。
+
 页面写入携带 base generation/hash。服务端写前重新读取并规范化真实状态；不匹配时
 拒绝覆盖，展示 base、current 和 proposed 三方差异。
 
@@ -65,4 +70,3 @@ persistent XML 与 live XML 分别计算，不得混用。哈希基于安全解�
 7. 用户确认后应用。
 8. 重新读取并验证最终状态。
 9. 写入资源 generation 和审计。
-

@@ -1,0 +1,37 @@
+services:
+  nexora:
+    build:
+      context: .
+    image: "${NEXORA_IMAGE:-nexora:latest}"
+    container_name: nexora
+    restart: unless-stopped
+    ports:
+      - "${NEXORA_HTTP_PORT:-8000}:8000"
+    volumes:
+      - ./data:/data
+      - "${NEXORA_LIBRARY_HOST_PATH:-/mnt/nexora-library}:/library:ro"
+    environment:
+      NEXORA_ENVIRONMENT: production
+      NEXORA_DATA_DIR: /data
+      NEXORA_LIBRARY_DIR: /library
+      NEXORA_LOG_LEVEL: "${NEXORA_LOG_LEVEL:-INFO}"
+      NEXORA_TRUSTED_HOSTS: "${NEXORA_TRUSTED_HOSTS:-localhost,127.0.0.1}"
+      NEXORA_MEDIA_PUBLIC_BASE_URL: "${NEXORA_MEDIA_PUBLIC_BASE_URL:-}"
+      NEXORA_SESSION_COOKIE_SECURE: "${NEXORA_SESSION_COOKIE_SECURE:-true}"
+      NEXORA_SECRET_KEY: "${NEXORA_SECRET_KEY:?NEXORA_SECRET_KEY is required}"
+      NEXORA_CREDENTIAL_KEY: "${NEXORA_CREDENTIAL_KEY:?NEXORA_CREDENTIAL_KEY is required}"
+      NEXORA_CREDENTIAL_ACTIVE_KEY_VERSION: "${NEXORA_CREDENTIAL_ACTIVE_KEY_VERSION:-1}"
+      NEXORA_CREDENTIAL_PREVIOUS_KEYS: "${NEXORA_CREDENTIAL_PREVIOUS_KEYS:-}"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    stop_grace_period: 30s

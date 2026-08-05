@@ -13,4 +13,22 @@
 ## 当前文档
 
 - `2026-07-28-documentation-baseline-design.md`
-
+- `2026-07-28-storage-pool-management-design.md`
+- `2026-07-28-storage-volume-management-design.md`
+- `2026-07-29-vm-disk-management-design.md`
+- `2026-07-29-vm-snapshot-read-design.md`
+- `2026-07-29-vm-snapshot-write-design.md`
+- `2026-07-29-vm-snapshot-delete-design.md`
+- `2026-07-29-vm-snapshot-revert-design.md`
+- `2026-07-29-vm-realtime-metrics-design.md`
+- `2026-07-29-vm-import-create-design.md`
+- `2026-07-29-vm-create-network-design.md`
+- `2026-07-29-vm-create-local-iso-design.md`
+- `2026-07-29-vm-create-platform-image-design.md`
+- `2026-07-29-cloud-image-create-design.md`
+- `2026-07-29-vm-guest-agent-status-design.md`
+- `2026-07-29-console-session-serial-design.md`
+- `2026-07-29-vnc-novnc-console-design.md`
+- `2026-07-29-vm-full-clone-design.md`
+- `2026-07-31-status-first-ui-modernization-design.md`
+- `../superpowers/specs/2026-07-31-ant-design-frontend-migration-design.md`
