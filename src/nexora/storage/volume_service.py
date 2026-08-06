@@ -152,7 +152,7 @@ class StorageVolumeService:
             notify(progress, 2, "Create validated storage volume without overwrite")
             result = self.commands.virsh(
                 plan.host_id,
-                ("vol-create", plan.pool_uuid, "/dev/stdin", "--validate"),
+                ("vol-create", plan.pool_uuid, "/dev/stdin"),
                 stdin=plan.proposed_xml,
             )
             _require_success(result)

@@ -186,7 +186,7 @@ class VmBlankCreationService:
             raise VmBlankCreationConflict("blank disk XML changed after preview")
         result = self.volume_commands.virsh(
             create.host_id,
-            ("vol-create", create.pool_uuid, "/dev/stdin", "--validate"),
+            ("vol-create", create.pool_uuid, "/dev/stdin"),
             stdin=plan.volume_xml,
         )
         _require_success(result)
