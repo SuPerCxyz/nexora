@@ -1,4 +1,4 @@
-import { Space, Typography } from "antd";
+import { Flex, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 
 import type {
@@ -70,8 +70,8 @@ export function StoragePage() {
   if (error) return <PageError error={error} />;
   if (!storage) return <PageLoading />;
   return (
-    <Space className="nx-page-stack" orientation="vertical" size={20}>
-      <div><Typography.Title level={2}>存储</Typography.Title><Typography.Text type="secondary">可写范围仅包含已纳管的本地目录与 NFS netfs Pool。</Typography.Text></div>
+    <Space className="nx-page-stack" orientation="vertical" size={12}>
+      <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap><div className="nx-page-title"><Typography.Title level={2}>存储</Typography.Title><Typography.Text type="secondary">可写范围仅包含已纳管的本地目录与 NFS netfs Pool。</Typography.Text></div></Flex>
       <StorageCreatePanel storage={storage} loading={loading} error={preview ? null : actionError} onPoolPreview={(value) => makePreview(value, "pool")} onVolumePreview={(value) => makePreview(value, "volume")} />
       <StorageTables pools={storage.pools} volumes={storage.volumes} loading={loading} onLifecycle={lifecycle} onMutation={mutation} />
       <StorageChangePreviewModal preview={preview} loading={loading} error={preview ? actionError : null} onCancel={() => { setPreview(null); setActionError(null); }} onConfirm={applyPreview} />

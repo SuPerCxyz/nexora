@@ -43,8 +43,8 @@ export function HostDetailPage({ hostId }: { hostId: string }) {
     catch (caught) { setError(caught instanceof Error ? caught : new Error("节点扫描提交失败")); setScanning(false); }
   }
   return (
-    <Space orientation="vertical" size={20} className="nx-page-stack">
-      <Flex className="nx-detail-header" justify="space-between" align="center" gap={16} wrap>
+    <Space orientation="vertical" size={12} className="nx-page-stack">
+      <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
         <div>
           <Flex align="center" gap={12} wrap>
             <Typography.Title level={2}>{data.host.name}</Typography.Title>
@@ -168,7 +168,7 @@ const vmColumns: ColumnsType<VmSummary> = [
     title: "虚拟机",
     render: (_, vm) => <div><a className="nx-resource-link" href={`/hosts/${vm.host_id}/vms/${vm.native_id}`}>{vm.name}</a><small className="nx-technical">{vm.native_id}</small></div>,
   },
-  { title: "状态", dataIndex: "state", render: (state: string) => <VmStatusTag state={state} /> },
+  { title: "状态", dataIndex: "state", render: (state: string, vm) => <Space size={6} wrap><VmStatusTag state={state} />{vm.needs_restart && <StatusTag label="待重启" tone="warning" description="配置已修改，重启虚拟机后生效" />}</Space> },
   { title: "配置", render: (_, vm) => `${vm.vcpus ?? "—"} vCPU · ${vm.memory_mib ?? "—"} MiB` },
 ];
 

@@ -17,6 +17,7 @@ from nexora.resources.index_store import ResourceIndexStore
 from nexora.resources.models import ResourceIndex, ResourceStatus, ResourceType
 from nexora.resources.storage_discovery import StorageDiscoveryService
 from nexora.storage.usage import StoragePoolUsageGuard
+from nexora.storage.volume_contracts import is_attachable_volume
 from nexora.tasks.locks import ResourceLockStore
 from nexora.vms.change_models import VmChangePlan, VmChangePlanStatus
 from nexora.vms.cpu_changes import (
@@ -96,6 +97,8 @@ class VmDiskChangeService(VmCpuChangeService):
         )
         proposed = LibvirtXmlDocument.parse(original_xml, expected_root="domain")
         target = apply_disk_attach(proposed, change)
+        if live:
+            self._verify_live_target(vm_base, target)
         change_input = {
             **asdict(change),
             "target": target,
@@ -198,6 +201,27 @@ class VmDiskChangeService(VmCpuChangeService):
             progress=progress,
         )
 
+    def _verify_live_target(
+        self,
+        vm_base: ResourceBaseVersion,
+        target: str,
+    ) -> None:
+        """Ensure the proposed disk target is not taken by a transient live device."""
+        observation = self.discovery.read_one(vm_base.host_id, vm_base.native_id)
+        live_xml = observation.documents.get("live_xml")
+        if not live_xml:
+            return
+        document = LibvirtXmlDocument.parse(live_xml, expected_root="domain")
+        used = {
+            used_target
+            for disk in document.root.findall("./devices/disk")
+            if (used_target := _disk_target(disk)) is not None
+        }
+        if target in used:
+            raise VmChangeConflict(
+                f"disk target {target} is already used by a live device; reboot the VM first"
+            )
+
     def _verified_volume(
         self,
         vm_base: ResourceBaseVersion,
@@ -231,7 +255,7 @@ class VmDiskChangeService(VmCpuChangeService):
             pool_details = json.loads(pool.details_json)
             if (
                 not bool(pool_details.get("active"))
-                or details.get("format") not in {"qcow2", "raw"}
+                or not is_attachable_volume(volume.display_name, str(details.get("format") or ""))
                 or volume.display_name.lower().endswith(".iso")
                 or details.get("key") is None
             ):
@@ -290,8 +314,9 @@ class VmDiskChangeService(VmCpuChangeService):
     ) -> CommandResult:
         host = self._host(host_id)
         change_type = self._current_plan.change_type
-        device_xml = _extract_device_xml(full_xml, change_type, payload)
         if change_type == "disk_attach":
+            # proposed XML contains the newly attached disk.
+            device_xml = _extract_device_xml(full_xml, change_type, payload)
             args = (
                 "-c",
                 host.libvirt_uri,
@@ -302,6 +327,10 @@ class VmDiskChangeService(VmCpuChangeService):
                 "--persistent",
             )
         else:
+            # detach must extract from the original XML, where the disk still exists.
+            device_xml = _extract_device_xml(
+                self._current_plan.original_xml, change_type, payload
+            )
             args = (
                 "-c",
                 host.libvirt_uri,
@@ -354,6 +383,11 @@ def _extract_device_xml(
             if src is not None and (src.get("file") == source or src.get("dev") == source):
                 return etree.tostring(disk, encoding="UTF-8")
         raise VmChangeConflict("disk device not found in original XML")
+
+
+def _disk_target(disk: etree._Element) -> str | None:
+    target = disk.find("target")
+    return target.get("dev") if target is not None else None
 
 
 def _required_path(value: object) -> str:

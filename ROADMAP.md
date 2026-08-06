@@ -61,10 +61,23 @@
 | P8-015 | 存储配置流程文案可读化 | DONE | P8-014 | 2026-08-03；“预览计划/创建任务”统一为“检查创建配置/确认并执行”，组件回归 PASS |
 | P9-001 | internal JSON 写入契约与零 Jinja 护栏 | DONE | P8-015 | 2026-08-03；兼容契约测试全部迁移到 internal JSON API，旧兼容 POST 路由已注销 |
 | P9-002 | 节点优先 VM 创建与空白磁盘 | DONE | P9-001 | 2026-08-03；空白 qcow2/raw Volume 同任务创建并定义 VM，revision 0021，可恢复执行与权威验证 PASS |
-| P9-003 | 快照、克隆、关机迁移与自动启动 React 化 | IN_PROGRESS | P9-001 | 快照、克隆、自动启动、关机迁移（保留 UUID/MAC）完成；待生产部署复核 |
-| P9-004 | VM 删除与重命名 | IN_PROGRESS | P9-003 | 2026-08-03；undefine/磁盘/NVRAM 逐项选择、关机 domrename、名称确认与权威验证完成；待部署 |
-| P9-005 | VM 网卡完整配置 | IN_PROGRESS | P9-003 | 2026-08-03；attach/detach/update、MAC 与网络切换、live/config 门禁完成；待部署 |
-| P9-006 | 旧业务模板与路由清理 | IN_PROGRESS | P9-001..005 | 2026-08-03；17 个旧 POST 路由文件与 55 个业务模板已删除，仅保留 react_shell.html |
+| P9-003 | 快照、克隆、关机迁移与自动启动 React 化 | DONE | P9-001 | 2026-08-05；快照、克隆、自动启动、关机迁移（保留 UUID/MAC）完成并部署生产 |
+| P9-004 | VM 删除与重命名 | DONE | P9-003 | 2026-08-05；undefine/磁盘/NVRAM 逐项选择、关机 domrename、名称确认与权威验证完成并部署 |
+| P9-005 | VM 网卡完整配置 | DONE | P9-003 | 2026-08-05；attach/detach/update、MAC 与网络切换、live/config 门禁完成并部署 |
+| P9-006 | 旧业务模板与路由清理 | DONE | P9-001..005 | 2026-08-05；17 个旧 POST 路由文件与 55 个业务模板已删除，仅保留 react_shell.html |
+| P9-007 | VM 操作区危险操作分行与总览增强 | DONE | P8-008 | 2026-08-05；强制操作/删除独立危险操作行，总览增加虚拟机分布、存储与任务排队，VM 列表支持状态/节点过滤 |
+| P9-008 | VM 配置每区块直接保存 + XML 历史与回滚 | DONE | P9-001..005 | 2026-08-05；`vm_xml_history`（0023，每 VM 10 份）、save/history/rollback API、`vm.xml_restore` 三步 handler、待重启标记（`needs_restart`） |
+| P9-009 | 创建虚拟机页面三源合并 | DONE | P9-002 | 2026-08-06；`/vms/create` 单页"磁盘来源"切换已有系统盘/空盘/平台镜像，旧子路径预选模式 |
+| P9-010 | VM 操作闭环修复（审查 #1-#12） | DONE | P9-005,P9-008 | 2026-08-06；live detach 断链、网卡更新弹窗与 update-device、本地 ISO 热插拔、CPU 拓扑 ≤ 校验+前端联动、添加光驱、内存组合预检、target 冲突预检 |
+| NEW-1 | 挂载卷格式白名单（qcow2/qcow/raw/img） | DONE | P9-008 | 2026-08-06；`is_attachable_volume` 统一挂载/创建/扩容校验，过滤 libvirt 误标 raw 的普通文件 |
+| NEW-2 | 全局界面密度收紧 | DONE | P8-008 | 2026-08-06；按钮 32px、表格内边距 10px、页面间距 12px |
+| NEW-3 | 网络拓扑层级化 + 名称引用边解析 | DONE | P4-001 | 2026-08-05；物理口→VLAN→Bridge→vnet→VM，`_resolve_reference` 名称关联 |
+| NEW-4 | 节点能力探测工具检测修复 | DONE | P1-001 | 2026-08-05；`command -v` 不再被 `env` 包裹，工具探测恢复 |
+| NEW-5 | 网络拓扑标签可读化 + 单一数据源图例 | DONE | P4-001 | 2026-08-05；`networkLabels.ts` 中文映射、`nodeTypeColor` 单一来源 |
+| NEW-6 | 存储发现容错（非法 UTF-8 卷名跳过告警） | DONE | P3-003 | 2026-08-05；`errors="replace"` + `storage_warnings`，kvm1 重新扫描成功 |
+| NEW-7 | 等待重启标记 `needs_restart` | DONE | P9-008 | 2026-08-05；任务时序推断，列表/节点/详情展示"待重启" |
+| NEW-8 | favicon 与布局对齐 | DONE | P8-015 | 2026-08-05；`/static/favicon.svg`、`nx-detail-header` 统一 |
+| NEW-9 | 网络拓扑透传网卡展示 + 节点颜色区分 | DONE | NEW-3 | 2026-08-06；hostdev PCI→pci_device 地址匹配生成 vm_nic 节点并关联 VM，`vm_nic`/`virtual_machine` 分色；kvm3 OpenWrt 2 个 I211 透传验证 |
 
 P7 暂不包含 aarch64、Rocky 之外的 RHEL 系发行版、在线迁移、任意历史分支恢复、
 复杂 external/raw/block/network Snapshot 链及 Bond/OVS/VXLAN 写入。

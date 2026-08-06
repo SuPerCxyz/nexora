@@ -48,6 +48,40 @@ class ResourceBackend:
         return _result(_output(command))
 
 
+class UnreadableVolumeBackend:
+    """One volume lists but its vol-dumpxml query fails."""
+
+    def run(
+        self,
+        _profile: SSHConnectionProfile,
+        command: str,
+        *,
+        timeout: int,
+        stdin: bytes | None,
+        cancel_event: Event | None,
+    ) -> ProcessResult:
+        del timeout, stdin, cancel_event
+        if "pool-list --all --name" in command:
+            return _result(b"default\n")
+        if "pool-info default" in command:
+            return _result(b"State: running\nPersistent: yes\nAutostart: yes\n")
+        if "pool-dumpxml default" in command:
+            return _result(_pool_xml())
+        if "vol-list" in command:
+            return _result(
+                b" Name     Path\n----------------------\n"
+                b" ok.qcow2 /images/ok.qcow2\n"
+                b" bad.md   /root/tmp/bad.md\n"
+            )
+        if "vol-dumpxml ok.qcow2" in command:
+            return _result(_volume_xml())
+        if "vol-dumpxml bad.md" in command:
+            return ProcessResult(
+                1, b"", b"error: volume not found", False, False, False, False, 0.01
+            )
+        raise AssertionError(command)
+
+
 @pytest.fixture
 def services(
     settings: Settings,
@@ -115,6 +149,29 @@ def test_read_pool_refreshes_one_authoritative_pool(
 
     assert UUID == observation.native_id
     assert "/images" == observation.details["target_path"]
+
+
+def test_storage_discovery_skips_unreadable_volume_and_reports_warning(
+    settings: Settings,
+) -> None:
+    database = Database(settings)
+    upgrade_database(database)
+    _add_host(database)
+    executor = RemoteExecutor(
+        Resolver(settings.data_dir / "hostkeys" / "known_hosts"),
+        Audit(),
+        backend=UnreadableVolumeBackend(),
+    )
+    discovery = StorageDiscoveryService(database, executor)
+    try:
+        result = discovery.run("host-1")
+    finally:
+        database.dispose()
+
+    assert 1 == len(result.volumes.resources)
+    assert "disk.qcow2" == result.volumes.resources[0].display_name
+    assert 1 == len(result.warnings)
+    assert "bad.md" in result.warnings[0]
 
 
 def _output(command: str) -> bytes:

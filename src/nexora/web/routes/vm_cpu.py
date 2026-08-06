@@ -140,8 +140,8 @@ def _base_version(detail: VmDetail, form: FormData) -> ResourceBaseVersion:
 
 def _integer(form: FormData, name: str) -> int:
     value = int(str(form.get(name, "0")))
-    if not 1 <= value <= 65_536:
-        raise ValueError(f"{name} must be between 1 and 65536")
+    if not 1 <= value <= 1024:
+        raise ValueError(f"{name} must be between 1 and 1024")
     return value
 
 

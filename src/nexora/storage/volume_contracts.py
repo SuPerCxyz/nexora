@@ -9,6 +9,21 @@ VOLUME_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,254}$")
 MIN_CAPACITY = 1024 * 1024
 MAX_CAPACITY = 8 * 1024**5
 
+ATTACHABLE_FORMATS = {"qcow2", "raw"}
+ATTACHABLE_EXTENSIONS = (".qcow2", ".qcow", ".qcow1", ".raw", ".img")
+
+
+def is_attachable_volume(display_name: str, volume_format: str | None) -> bool:
+    """判断卷是否为可挂载给虚拟机的磁盘镜像。
+
+    libvirt 会把普通文件 (如 .tar.gz、.xml) 也探测成 raw，因此除格式外
+    还必须以磁盘镜像扩展名结尾，避免把非镜像文件挂载为磁盘。
+    """
+    if volume_format not in ATTACHABLE_FORMATS:
+        return False
+    lowered = display_name.lower()
+    return any(lowered.endswith(extension) for extension in ATTACHABLE_EXTENSIONS)
+
 
 @dataclass(frozen=True)
 class StorageVolumeCreateInput:

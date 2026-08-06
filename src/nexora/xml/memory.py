@@ -47,6 +47,10 @@ class MemoryConfigChange:
             raise XmlStructureError("unsupported memory access mode")
         if self.allocation_mode is not None and self.allocation_mode not in ALLOCATION_MODES:
             raise XmlStructureError("unsupported memory allocation mode")
+        if self.discard and self.source_type == "anonymous":
+            raise XmlStructureError("discard memory requires file-backed memory source")
+        if self.source_type == "file" and self.access_mode == "private":
+            raise XmlStructureError("file-backed memory requires shared access mode")
 
 
 def read_memory_config(document: LibvirtXmlDocument) -> MemoryConfigChange:

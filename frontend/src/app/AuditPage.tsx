@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Select, Space, Table, Typography } from "antd";
+import { Card, Flex, Pagination, Select, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 
@@ -14,24 +14,23 @@ export function AuditPage() {
   const [hostId, setHostId] = useState<string | undefined>();
   const [outcome, setOutcome] = useState("all");
   useEffect(() => { loadAudit().then(setData).catch(setError); }, []);
-  async function refresh(page = 1, nextHost = hostId, nextOutcome = outcome) {
-    try { setData(await loadAudit(page, nextHost, nextOutcome)); }
-    catch (caught) { setError(caught instanceof Error ? caught : new Error("审计记录读取失败")); }
+  function apply(page = 1, nextHost = hostId, nextOutcome = outcome) {
+    setError(null);
+    loadAudit(page, nextHost, nextOutcome).then(setData).catch(setError);
   }
   if (error) return <PageError error={error} />;
   if (!data) return <PageLoading />;
-  return <Space orientation="vertical" size={20} className="nx-page-stack">
-    <div className="nx-page-title"><Typography.Title level={2}>远端命令审计</Typography.Title><Typography.Text type="secondary">仅展示已脱敏摘要，凭据、Token 与敏感输出不会入库</Typography.Text></div>
-    <Card>
-      <Flex gap={12} align="end" wrap>
-        <div><label className="nx-field-label">节点</label><Select allowClear placeholder="全部节点" value={hostId} options={data.hosts.map((host) => ({ value: host.id, label: host.name }))} onChange={setHostId} className="nx-filter-control" /></div>
-        <div><label className="nx-field-label">结果</label><Select value={outcome} options={[{ value: "all", label: "全部" }, { value: "succeeded", label: "成功" }, { value: "failed", label: "失败" }]} onChange={setOutcome} className="nx-filter-control" /></div>
-        <Button className="nx-btn-primary" onClick={() => refresh()}>筛选</Button>
-      </Flex>
-    </Card>
+  return <Space orientation="vertical" size={12} className="nx-page-stack">
+    <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
+      <div className="nx-page-title"><Typography.Title level={2}>远端命令审计</Typography.Title><Typography.Text type="secondary">仅展示已脱敏摘要，凭据、Token 与敏感输出不会入库</Typography.Text></div>
+      <Space wrap>
+        <Select allowClear showSearch placeholder="全部节点" className="nx-filter-control" value={hostId} options={data.hosts.map((host) => ({ value: host.id, label: host.name }))} onChange={(value) => { setHostId(value); apply(1, value, outcome); }} />
+        <Select className="nx-filter-control" value={outcome} options={[{ value: "all", label: "全部结果" }, { value: "succeeded", label: "成功" }, { value: "failed", label: "失败" }, { value: "timed_out", label: "超时" }]} onChange={(value) => { setOutcome(value); apply(1, hostId, value); }} />
+      </Space>
+    </Flex>
     <Card title={`最近记录 · ${data.total} 条`}>
       <Table rowKey="operation_id" columns={columns} dataSource={data.items} pagination={false} locale={{ emptyText: <PageEmpty description="没有匹配的审计记录" /> }} scroll={{ x: 980 }} expandable={{ rowExpandable: (item) => Boolean(item.stdout_summary || item.stderr_summary), expandedRowRender: AuditOutput }} />
-      <Flex justify="space-between" align="center" className="nx-table-footer"><Button disabled={!data.has_previous} onClick={() => refresh(data.page - 1)}>上一页</Button><span>第 {data.page} 页</span><Button disabled={!data.has_next} onClick={() => refresh(data.page + 1)}>下一页</Button></Flex>
+      <Pagination className="nx-table-footer" current={data.page} pageSize={50} total={data.total} showSizeChanger={false} onChange={(page) => apply(page)} />
     </Card>
   </Space>;
 }

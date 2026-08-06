@@ -25,7 +25,7 @@ class PoolInfo:
 
 
 def parse_volume_list(content: bytes) -> list[str]:
-    lines = content.decode("utf-8", errors="strict").splitlines()
+    lines = content.decode("utf-8", errors="replace").splitlines()
     header_index = next(
         (
             index

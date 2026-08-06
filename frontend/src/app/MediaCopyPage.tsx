@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Form, Input, Select, Space, Typography } from "antd";
+import { Alert, Button, Card, Flex, Form, Input, Select, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 
 import type { MediaCopyOptions } from "../api/media";
@@ -23,8 +23,8 @@ export function MediaCopyPage({ mediaId }: { mediaId: string }) {
     try { window.location.assign((await copyMedia(mediaId, await form.validateFields())).location); }
     catch (caught) { if (caught instanceof Error) setError(caught); setSubmitting(false); }
   }
-  return <Space orientation="vertical" size={20} className="nx-page-stack">
-    <div className="nx-page-title"><Typography.Title level={2}>复制 {data.item.file_name}</Typography.Title><Typography.Text type="secondary">源镜像保持只读，校验完成后才发布目标文件</Typography.Text></div>
+  return <Space orientation="vertical" size={12} className="nx-page-stack">
+    <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap><div className="nx-page-title"><Typography.Title level={2}>复制 {data.item.file_name}</Typography.Title><Typography.Text type="secondary">源镜像保持只读，校验完成后才发布目标文件</Typography.Text></div></Flex>
     <Alert type="info" showIcon={false} message="任务使用专属 .partial 文件，完成大小与 SHA-256 校验后发布，并拒绝覆盖同名文件。" />
     <Card>
       {data.targets.length === 0 ? <PageEmpty description="没有 active 的 dir 或 netfs 目标存储池" /> : <Form form={form} layout="vertical" requiredMark={false} className="nx-form-narrow">

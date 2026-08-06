@@ -8,6 +8,7 @@ from lxml import etree
 from nexora.xml.document import LibvirtXmlDocument
 from nexora.xml.errors import CpuTopologyError, XmlStructureError
 
+MAX_VCPUS = 1024
 
 @dataclass(frozen=True)
 class CpuTopologyChange:
@@ -31,11 +32,15 @@ class CpuTopologyChange:
         )
         if any(value < 1 for value in values):
             raise CpuTopologyError("CPU values must be positive")
+        if self.maximum_vcpus > MAX_VCPUS:
+            raise CpuTopologyError("maximum vCPU exceeds the supported limit")
         if self.current_vcpus > self.maximum_vcpus:
             raise CpuTopologyError("current vCPU exceeds maximum vCPU")
         dimensions = (self.sockets, self.dies, self.clusters, self.cores, self.threads)
-        if prod(dimensions) != self.maximum_vcpus:
-            raise CpuTopologyError("CPU topology product must equal maximum vCPU")
+        if prod(dimensions) > self.maximum_vcpus:
+            raise CpuTopologyError("CPU topology product must not exceed maximum vCPU")
+        if self.threads not in {1, 2}:
+            raise CpuTopologyError("threads per core must be 1 or 2")
 
 
 def read_cpu_topology(document: LibvirtXmlDocument) -> CpuTopologyChange:

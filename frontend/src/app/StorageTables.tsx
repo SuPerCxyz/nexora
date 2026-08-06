@@ -36,7 +36,7 @@ export function StorageTables({
     { title: "操作", width: 100, render: (_, volume) => volume.writable ? <VolumeActions volume={volume} loading={loading} onMutation={onMutation} /> : <Typography.Text type="secondary">只读</Typography.Text> },
   ];
   return (
-    <Space className="nx-page-stack" orientation="vertical" size={16}>
+    <Space className="nx-page-stack" orientation="vertical" size={12}>
       <Card title="已发现的存储池">
         <Table rowKey="resource_id" columns={poolColumns} dataSource={pools} pagination={{ pageSize: 20 }} scroll={{ x: 900 }} />
       </Card>
@@ -56,7 +56,7 @@ function PoolActions({ pool, loading, onLifecycle, onDelete }: { pool: StoragePo
     { key: "autostart_disable", label: "禁用自动启动", disabled: !pool.autostart, danger: true },
     { key: "delete", label: "移除存储池定义", disabled: pool.active, danger: true },
   ];
-  return <Dropdown menu={{ items, onClick: ({ key }) => key === "delete" ? onDelete() : onLifecycle(pool, key) }} trigger={["click"]} disabled={loading}><Button className="nx-btn-info">操作</Button></Dropdown>;
+  return <Dropdown menu={{ items, onClick: ({ key }) => key === "delete" ? onDelete() : onLifecycle(pool, key) }} trigger={["click"]} disabled={loading}><Button size="small" className="nx-btn-info">操作</Button></Dropdown>;
 }
 
 function VolumeActions({ volume, loading, onMutation }: {
@@ -77,11 +77,11 @@ function VolumeActions({ volume, loading, onMutation }: {
     { key: "resize", label: "扩容" },
     { key: "delete", label: "删除", danger: true },
   ];
-  return <Dropdown menu={{ items, onClick: ({ key }) => key === "resize" ? resize() : onMutation(volume.resource_id, "volume_delete") }} disabled={loading}><Button className="nx-btn-info">操作</Button></Dropdown>;
+  return <Dropdown menu={{ items, onClick: ({ key }) => key === "resize" ? resize() : onMutation(volume.resource_id, "volume_delete") }} disabled={loading}><Button size="small" className="nx-btn-info">操作</Button></Dropdown>;
 }
 
 function PoolState({ pool }: { pool: StoragePoolSummary }) {
-  return <Flex gap={6} wrap><StatusTag label={pool.active ? "运行中" : "已停止"} tone={pool.active ? "running" : "stopped"} />{pool.autostart && <StatusTag label="自动启动" tone="starting" />}</Flex>;
+  return <Flex gap={6} className="nx-inline-tags"><StatusTag label={pool.active ? "运行中" : "已停止"} tone={pool.active ? "running" : "stopped"} />{pool.autostart && <StatusTag label="自动启动" tone="starting" />}</Flex>;
 }
 
 function ResourceIdentity({ name, identity }: { name: string; identity: string }) {

@@ -9,7 +9,10 @@ from nexora.resources.domain_discovery import DomainDiscoveryService
 from nexora.resources.models import ResourceIndex, ResourceStatus, ResourceType
 from nexora.resources.storage_discovery import StorageDiscoveryService
 from nexora.storage.usage import StoragePoolUsageGuard, StorageVolumeReference
-from nexora.storage.volume_contracts import StorageVolumeMutationInput
+from nexora.storage.volume_contracts import (
+    StorageVolumeMutationInput,
+    is_attachable_volume,
+)
 from nexora.storage.volume_service import StorageVolumeConflict
 
 
@@ -46,7 +49,7 @@ class StorageVolumeAuthority:
         pool = self._verify_pool(change)
         volume = self._verify_volume(change)
         details: dict[str, object] = json.loads(volume.details_json)
-        if details.get("format") not in {"qcow2", "raw"}:
+        if not is_attachable_volume(volume.display_name, str(details.get("format") or "")):
             raise StorageVolumeConflict("storage volume format is not writable")
         references = self.usage.volume_references(
             change.host_id,

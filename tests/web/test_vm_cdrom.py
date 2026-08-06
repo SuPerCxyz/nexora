@@ -20,6 +20,7 @@ class CdromServiceStub:
         target: str,
         bus: str,
         expected_source: str | None,
+        live: bool = False,
     ) -> object:
         assert ("sda", "sata", None) == (target, bus, expected_source)
         plan = SimpleNamespace(

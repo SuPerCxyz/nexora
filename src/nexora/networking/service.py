@@ -27,6 +27,7 @@ class NetworkTopologyService:
                             (
                                 ResourceType.HOST_INTERFACE,
                                 ResourceType.VIRTUAL_MACHINE,
+                                ResourceType.PCI_DEVICE,
                             )
                         ),
                     )

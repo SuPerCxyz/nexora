@@ -1,22 +1,48 @@
-import { Alert, Button, Card, Flex, Progress, Space, Table, Typography } from "antd";
+import { Alert, Button, Card, Flex, Progress, Select, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 
-import type { TaskDetail, TaskStepSummary, TaskSummary } from "../api/contracts";
+import type { HostSummary, TaskDetail, TaskStepSummary, TaskSummary } from "../api/contracts";
+import { loadHosts } from "../api/core";
 import { cancelTask, loadTask, loadTasks, recoverTask } from "../api/tasks";
 import { formatDateTime } from "./dateTime";
 import { PageEmpty, PageError, PageLoading } from "./PageState";
 import { StatusTag } from "./StatusTag";
 
+const statusOptions = [
+  { value: "pending", label: "等待中" },
+  { value: "queued", label: "已排队" },
+  { value: "running", label: "执行中" },
+  { value: "waiting_confirmation", label: "等待确认" },
+  { value: "succeeded", label: "已完成" },
+  { value: "failed", label: "失败" },
+  { value: "cancelled", label: "已取消" },
+  { value: "timed_out", label: "超时" },
+  { value: "interrupted", label: "已中断" },
+];
+
 export function TasksPage() {
   const [items, setItems] = useState<TaskSummary[] | null>(null);
+  const [hosts, setHosts] = useState<HostSummary[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>();
+  const [hostFilter, setHostFilter] = useState<string>();
   const [error, setError] = useState<Error | null>(null);
   useEffect(() => { loadTasks().then((payload) => setItems(payload.items)).catch(setError); }, []);
+  useEffect(() => { loadHosts(1, 100).then((payload) => setHosts(payload.items)).catch(() => {}); }, []);
   if (error) return <PageError error={error} />;
   if (!items) return <PageLoading />;
-  return <Space orientation="vertical" size={20} className="nx-page-stack">
-    <div className="nx-page-title"><Typography.Title level={2}>任务中心</Typography.Title><Typography.Text type="secondary">跟踪资源变更、恢复与验证进度</Typography.Text></div>
-    <Card><Table className="nx-responsive-table" rowKey="id" columns={taskColumns} dataSource={items} locale={{ emptyText: <PageEmpty description="暂无任务记录" /> }} pagination={{ pageSize: 20 }} tableLayout="fixed" /></Card>
+  const filtered = items.filter((task) =>
+    (!statusFilter || task.status === statusFilter) &&
+    (!hostFilter || task.host_id === hostFilter));
+  return <Space orientation="vertical" size={12} className="nx-page-stack">
+    <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
+      <div className="nx-page-title"><Typography.Title level={2}>任务中心</Typography.Title><Typography.Text type="secondary">跟踪资源变更、恢复与验证进度</Typography.Text></div>
+      <Space wrap>
+        <Select allowClear placeholder="状态" className="nx-filter-control" options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+        <Select allowClear showSearch placeholder="节点" className="nx-filter-control" options={hosts.map((host) => ({ value: host.id, label: host.name }))} value={hostFilter} onChange={setHostFilter} />
+      </Space>
+    </Flex>
+    <Card><Table className="nx-responsive-table" rowKey="id" columns={taskColumns} dataSource={filtered} locale={{ emptyText: <PageEmpty description="没有匹配的任务记录" /> }} pagination={{ pageSize: 20 }} tableLayout="fixed" /></Card>
   </Space>;
 }
 
@@ -44,8 +70,8 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     } catch (caught) { setError(caught instanceof Error ? caught : new Error("任务操作失败")); }
     finally { setSubmitting(false); }
   }
-  return <Space orientation="vertical" size={20} className="nx-page-stack">
-    <Flex className="nx-detail-header" justify="space-between" align="center" gap={16} wrap>
+  return <Space orientation="vertical" size={12} className="nx-page-stack">
+    <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
       <div><Typography.Title level={2}>{task.title}</Typography.Title><span className="nx-technical">{task.id}</span></div>
       <Space>{cancellable && <Button className="nx-btn-danger" loading={submitting} onClick={() => submit("cancel")}>请求取消</Button>}{recoverable && <Button className="nx-btn-primary" loading={submitting} onClick={() => submit("recover")}>验证并重试</Button>}</Space>
     </Flex>

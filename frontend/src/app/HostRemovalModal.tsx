@@ -24,7 +24,7 @@ export function HostRemovalModal({ hostId, hostName, open, onClose }: { hostId: 
     catch (caught) { setError(caught instanceof Error ? caught.message : "节点移除提交失败"); setLoading(false); }
   }
   return <Modal title={`移除节点 ${hostName}`} open={open} onCancel={onClose} footer={null} destroyOnHidden>
-    <Space orientation="vertical" size={16} className="nx-page-stack">
+    <Space orientation="vertical" size={12} className="nx-page-stack">
       <Alert type="warning" showIcon={false} message="只移除 Nexora 管理关系，不删除虚拟机、磁盘、Pool、网络、Bridge、VLAN、IP 或路由。" />
       {!preview ? <>
         <Radio.Group value={mode} onChange={(event) => setMode(event.target.value)} className="nx-removal-options">

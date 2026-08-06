@@ -60,6 +60,8 @@ def _interface(
     info_data = linkinfo_dict.get("info_data")
     info_data_dict = info_data if isinstance(info_data, dict) else {}
     address_record = addresses.get(ifindex, {})
+    parent_index = link.get("link_index")
+    parent_link = link.get("link") if kind == "vlan" else None
     details: dict[str, object] = {
         "ifindex": ifindex,
         "ifname": ifname,
@@ -69,7 +71,9 @@ def _interface(
         "operstate": link.get("operstate"),
         "flags": link.get("flags") if isinstance(link.get("flags"), list) else [],
         "master_ifindex": link.get("master"),
-        "parent_ifindex": link.get("link_index"),
+        "parent_ifindex": (
+            parent_index if isinstance(parent_index, int) else parent_link
+        ),
         "vlan_id": info_data_dict.get("id") if kind == "vlan" else None,
         "addresses": _address_summaries(address_record),
         "routes": routes.get(ifname, []),
@@ -82,10 +86,10 @@ def _interface(
         sort_keys=True,
         separators=(",", ":"),
     ).encode()
-    parent = link.get("link_index") if kind == "vlan" else None
+    parent = parent_index if isinstance(parent_index, int) else parent_link
     return ResourceObservation(
         native_id=str(ifindex),
-        parent_native_id=str(parent) if isinstance(parent, int) else None,
+        parent_native_id=str(parent) if parent is not None else None,
         display_name=ifname,
         status=ResourceStatus.READ_ONLY,
         persistent_hash=None,

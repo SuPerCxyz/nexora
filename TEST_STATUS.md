@@ -2,18 +2,24 @@
 
 ## 当前状态
 
-- 当前阶段：P9 零旧前端与 VM 操作闭环
+- 当前阶段：P9 零旧前端与 VM 操作闭环（P9-001~P9-010 完成并部署）
 - 已实现代码：internal JSON 配置、快照、克隆、存储变更、节点优先创建、空白磁盘、
-  关机迁移、删除重命名与网卡配置
-- 自动化测试：428 个通过；另有 25 个 opt-in 真实集成参数用例
+  关机迁移、删除重命名、网卡配置、XML 历史回滚、创建页三源合并与操作闭环修复
+- 自动化测试：437 个通过；另有 25 个 opt-in 真实集成参数用例
 - 集成环境：Rocky 9.7 嵌套 KVM，详见专项目录
-- 最近验证：全量静态检查、测试、双资产构建、Rocky 硬件探测及节点双断点 QA；
-  2026-08-05 节点只读门禁实现后按决策回滚，无代码残留
+- 最近验证：2026-08-06 网络拓扑增强（透传网卡展示 + 节点颜色区分）与 VM 操作闭环
+  修复；后端 454 passed、25 skipped；前端 21 tests + build；ruff/mypy 通过
+- 迁移链 head：`20260803_0023`（`vm_xml_history`）
 
 ## 已执行验证
 
 | 日期 | 命令 | 结果 | 范围 |
 |---|---|---|---|
+| 2026-08-06 | 网络拓扑透传网卡 | PASS；后端 454 passed、25 skipped；新增 hostdev PCI→pci_device 匹配单测；kvm3 OpenWrt 2 个 I211 透传验证 | 拓扑透传/节点颜色 |
+| 2026-08-06 | 文档同步 + 测试补齐 | PASS；453 passed、25 skipped；新增 XML 历史回滚/`is_attachable_volume`/`needs_restart` 测试；修复 `xml_history` DELETE OFFSET 语法与 `created_at` 类型转换两个生产 bug | 审计整改/测试缺口 |
+| 2026-08-06 | VM 操作闭环修复全量 | PASS；437 passed、25 skipped；Ruff/Mypy；前端 21 tests + build | live detach/update、网卡弹窗、ISO 热插拔、CPU ≤、光驱添加、内存预检 |
+| 2026-08-06 | 数据库迁移链 | PASS；6 tests，head revision `20260803_0023` | 迁移（`vm_xml_history`） |
+| 2026-08-06 | 创建页三源合并 + 密度 + 卷白名单 | PASS；430 passed、25 skipped；前端 21 tests + build | VmCreatePage 合并/密度/`is_attachable_volume` |
 | 2026-08-03 | P9-001/006 旧路由注销与模板清理 | PASS；425 passed、25 skipped；旧 POST 路由 404，React 壳路由 200 | 兼容测试迁移/路由注销 |
 | 2026-08-03 | P9-002～005 全量门禁 | PASS；428 passed、25 skipped；Ruff/format/Mypy 284 source files；React 20 tests 与生产构建 | 空白磁盘/关机迁移/删除重命名/网卡 |
 | 2026-08-03 | P9-002 空白磁盘定向 | PASS；3 tests（service 1 + web 2）；revision 0021 | 空白磁盘创建 |
@@ -414,3 +420,51 @@ P7 真实 Rocky 指标、virtiofs、IPv6-only 和双栈启动已执行并通过�
 | 数据库迁移测试 | PASS | `tests/test_database.py` 迁移链回到 `20260803_0022` |
 | Web 回归 | PASS | `tests/web/` 80 passed |
 | 残留检查 | PASS | `rg` 无 `read_only` / `ensure_host_writable` / `host_read_only` 残留 |
+
+## P9-007 操作区与总览增强验证（2026-08-05）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| 总览扩展 | PASS；1 test | OverviewSummary 新增 vm_paused/vm_stopped/task_pending/storage_pool_total/storage_volume_total |
+| VM 列表过滤 | PASS；1 test | `/internal/vms` 按 state/host_id 过滤、未知节点返回空 |
+| 后端全量 | PASS | `uv run pytest -q` 426 passed、25 skipped |
+| Ruff / Mypy | PASS | 修改的 read_service、core、contracts 定向检查通过 |
+| 前端测试 | PASS；20 tests | 含强制操作父元素 `nx-vm-danger-row` 断言与 VM 列表过滤渲染 |
+| 前端构建 | PASS | `tsc -b && vite build` 无错误 |
+
+## 存储发现容错修复验证（2026-08-05）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| 卷名容错解析 | PASS；1 test | `parse_volume_list` 对含 `\xff` 非法 UTF-8 字节卷名改用替换解码，不再抛异常 |
+| 坏卷跳过 | PASS；1 test | 单个卷 `vol-dumpxml` 失败时跳过并计入 `StorageDiscoveryResult.warnings`，其他卷正常入库 |
+| 后端全量 | PASS | `uv run pytest -q` 428 passed、25 skipped |
+| kvm1 生产重扫 | PASS | `host.resource_discovery` succeeded：pools=7, volumes=64, interfaces=36, pci=28, usb=4, storage_warnings=10 |
+| kvm1 拓扑恢复 | PASS | 接口资源入库，物理口 enp6s0/enp7s0f0/enp7s0f1 → VLAN/Bridge → vnet → VM 层级就绪 |
+
+## 网络拓扑边按名称解析修复验证（2026-08-05）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| 名称引用边 | PASS；1 test | master/parent 为接口名时 `_resolve_reference` 按 label 关联，vlan/bridge/vnet/vm 边齐全 |
+| 后端全量 | PASS | `uv run pytest -q` 429 passed、25 skipped |
+| 前端层级测试 | PASS | physical→vlan→bridge→vnet→vm_nic→vm 逐层断言 |
+| kvm1 生产拓扑边 | PASS | `enp7s0f0→enp7s0f0.100(parent)→br_100(bridge_port)→vnet→vm_nic→vm` 完整链路 |
+
+## 网络拓扑标签可读化验证（2026-08-05）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| 前端测试 | PASS；21 tests | 层级定位与边构建断言通过（含中文关系标签数据） |
+| 前端构建 | PASS | `tsc -b && vite build` 无错误 |
+| 部署 | PASS | `nexora:latest` healthy，回滚镜像 `nexora:rollback-nettips-20260805T101541Z` 保留 |
+| 已知 flaky | 记录 | 全量前端并行时 `previews a VM creation plan`/`legacy VM manage URL` 偶发失败，单独运行均通过，与网络改动无关，待专项排查测试隔离 |
+
+## 节点能力探测工具检测修复验证（2026-08-05）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| 根因确认 | PASS | `env -- LC_ALL=C command -v <tool>` 中 `command` 为 shell 内建，env 无法执行（rc=127）；无 env 时 `command -v virsh` 返回 `/usr/bin/virsh` |
+| 探测修复 | PASS；1 test | 工具探测不再用 env 包装，passwordless 节点 `command -v` 正常（断言命令不含 env） |
+| 后端全量 | PASS | `uv run pytest -q` 430 passed、25 skipped |
+| ubuntu2604-kvm 生产重探 | PASS | 节点 degraded→ready；tool.virsh/qemu-img/virt-install 等全部 required/optional_missing→normal |

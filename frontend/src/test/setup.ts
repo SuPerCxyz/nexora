@@ -1,4 +1,7 @@
 import "@testing-library/jest-dom/vitest";
+import { configure } from "@testing-library/react";
+
+configure({ asyncUtilTimeout: 8000 });
 
 class ResizeObserverStub implements ResizeObserver {
   observe(): void {}

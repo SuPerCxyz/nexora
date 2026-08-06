@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Form, Input, InputNumber, Select, Space, Table, Typography } from "antd";
+import { Alert, Button, Card, Flex, Form, Input, InputNumber, Select, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 
@@ -33,8 +33,8 @@ export function AccountPage() {
     try { window.location.assign((await logout()).redirect); }
     catch (caught) { setError(caught instanceof Error ? caught : new Error("退出失败")); }
   }
-  return <Space orientation="vertical" size={20} className="nx-page-stack">
-    <div className="nx-page-title"><Typography.Title level={2}>管理员账户</Typography.Title><Typography.Text type="secondary">更新身份、安全设置和界面偏好</Typography.Text></div>
+  return <Space orientation="vertical" size={12} className="nx-page-stack">
+    <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap><div className="nx-page-title"><Typography.Title level={2}>管理员账户</Typography.Title><Typography.Text type="secondary">更新身份、安全设置和界面偏好</Typography.Text></div></Flex>
     <Alert type="info" showIcon={false} message="保存账户后会撤销其他 Session，并为当前浏览器签发新 Session。" />
     <Card title="账户与偏好">
       <Form form={form} layout="vertical" requiredMark={false} className="nx-form-narrow">

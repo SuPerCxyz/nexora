@@ -136,6 +136,47 @@ def _source_identity(source: etree._Element | None) -> str | None:
     return source.get("file") or source.get("name")
 
 
+def apply_cdrom_add(
+    document: LibvirtXmlDocument,
+    bus: str,
+) -> str:
+    """Add an empty CD-ROM device on the requested bus; returns the target name."""
+    if bus not in SUPPORTED_CDROM_BUSES:
+        raise CdromConfigError("CD-ROM bus is unsupported")
+    devices = document.root.find("devices")
+    if devices is None:
+        raise CdromConfigError("domain XML is missing devices")
+    target = _next_cdrom_target(devices, bus)
+    cdrom = etree.Element("disk", type="file", device="cdrom")
+    etree.SubElement(cdrom, "target", dev=target, bus=bus)
+    etree.SubElement(cdrom, "readonly")
+    if bus == "sata" and not _has_sata_controller(devices):
+        controller = etree.Element("controller", type="sata", index="0")
+        devices.append(controller)
+    devices.append(cdrom)
+    return target
+
+
+def _next_cdrom_target(devices: etree._Element, bus: str) -> str:
+    if bus == "ide":
+        prefix, offset = "hd", 0
+    else:
+        prefix, offset = "sd", 0
+    used = {_target(disk) for disk in devices.findall("disk")}
+    for index in range(16):
+        candidate = f"{prefix}{chr(ord('a') + index + offset)}"
+        if candidate not in used:
+            return candidate
+    raise CdromConfigError("no free CD-ROM target is available")
+
+
+def _has_sata_controller(devices: etree._Element) -> bool:
+    return any(
+        controller.get("type") == "sata"
+        for controller in devices.findall("controller")
+    )
+
+
 def _target(disk: etree._Element) -> str | None:
     target = disk.find("target")
     return target.get("dev") if target is not None else None

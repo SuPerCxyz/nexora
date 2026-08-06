@@ -67,10 +67,12 @@ def test_cpu_change_produces_narrow_reviewable_diff() -> None:
 
 def test_cpu_topology_product_and_current_vcpu_are_validated() -> None:
     document = LibvirtXmlDocument.parse(DOMAIN_XML)
-    invalid_product = CpuTopologyChange(2, 8, 1, 1, 1, 2, 2)
+    invalid_product = CpuTopologyChange(2, 8, 2, 1, 1, 4, 2)
+    valid_product = CpuTopologyChange(2, 8, 1, 1, 1, 2, 2)
     invalid_current = CpuTopologyChange(9, 8, 1, 1, 1, 4, 2)
 
     with pytest.raises(CpuTopologyError, match="product"):
         apply_cpu_topology(document, invalid_product)
+    apply_cpu_topology(document, valid_product)
     with pytest.raises(CpuTopologyError, match="current"):
         apply_cpu_topology(document, invalid_current)

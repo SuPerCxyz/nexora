@@ -5,7 +5,10 @@ from datetime import datetime
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 
+from nexora.db import Database
+from nexora.hosts.models import Host
 from nexora.tasks.models import Task, TaskStep
 from nexora.tasks.read_service import TaskReadService
 from nexora.web.internal.auth import (
@@ -35,6 +38,8 @@ class TaskSummary(BaseModel):
     resumable: bool
     retry_count: int
     max_retries: int
+    host_id: str | None = None
+    host_name: str | None = None
 
 
 class TaskStepSummary(BaseModel):
@@ -58,7 +63,8 @@ async def internal_tasks(request: Request) -> JSONResponse:
     if isinstance(denied, JSONResponse):
         return denied
     tasks = TaskReadService(request.app.state.database).recent()
-    payload = [_task_summary(task).model_dump(mode="json") for task in tasks]
+    host_names = _host_names(request.app.state.database)
+    payload = [_task_summary(task, host_names).model_dump(mode="json") for task in tasks]
     return no_store(JSONResponse({"items": payload}))
 
 
@@ -109,7 +115,8 @@ def _task_location(task_id: str) -> JSONResponse:
     return no_store(JSONResponse(payload.model_dump()))
 
 
-def _task_summary(task: Task) -> TaskSummary:
+def _task_summary(task: Task, host_names: dict[str, str] | None = None) -> TaskSummary:
+    names = host_names or {}
     return TaskSummary(
         id=task.id,
         title=task.title,
@@ -126,7 +133,15 @@ def _task_summary(task: Task) -> TaskSummary:
         resumable=task.resumable,
         retry_count=task.retry_count,
         max_retries=task.max_retries,
+        host_id=task.host_id,
+        host_name=names.get(task.host_id or ""),
     )
+
+
+def _host_names(database: Database) -> dict[str, str]:
+    with database.session() as session:
+        rows = session.execute(select(Host.id, Host.name))
+        return {host_id: name for host_id, name in rows}
 
 
 def _step_summary(step: TaskStep) -> TaskStepSummary:

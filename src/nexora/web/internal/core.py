@@ -8,6 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from nexora.hosts.metrics_history import HostMetricsHistoryStore
 from nexora.hosts.models import HostStatus
 from nexora.hosts.read_service import HostReadService
+from nexora.storage.read_service import StorageReadService
 from nexora.tasks.models import TaskStatus
 from nexora.tasks.read_service import ACTIVE_TASK_STATUSES, TaskReadService
 from nexora.vms.guest_agent import GuestAgentView
@@ -39,14 +40,23 @@ async def internal_overview(request: Request) -> JSONResponse:
     hosts = HostReadService(request.app.state.database).list_hosts()
     virtual_machines = VmReadService(request.app.state.database).list_vms()
     tasks = TaskReadService(request.app.state.database).recent()
+    storage = StorageReadService(request.app.state.database)
+    vm_states = [item.details.get("state") for item in virtual_machines]
+    vm_running = sum(state == "running" for state in vm_states)
+    vm_paused = sum(state == "paused" for state in vm_states)
     payload = OverviewSummary(
         host_total=len(hosts),
         host_ready=sum(host.status == HostStatus.READY for host in hosts),
         host_synced=sum(host.last_scanned_at is not None for host in hosts),
         vm_total=len(virtual_machines),
-        vm_running=sum(item.details.get("state") == "running" for item in virtual_machines),
+        vm_running=vm_running,
+        vm_paused=vm_paused,
+        vm_stopped=len(virtual_machines) - vm_running - vm_paused,
         active_tasks=sum(task.status in ACTIVE_TASK_STATUSES for task in tasks),
+        task_pending=sum(task.status in (TaskStatus.PENDING, TaskStatus.QUEUED) for task in tasks),
         failed_tasks=sum(task.status == TaskStatus.FAILED for task in tasks),
+        storage_pool_total=len(storage.pools()),
+        storage_volume_total=len(storage.volumes()),
     )
     return _response(payload)
 
@@ -76,15 +86,22 @@ async def internal_vms(
     request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    state: str | None = Query(None, max_length=32),
+    host_id: str | None = Query(None, max_length=36),
 ) -> JSONResponse:
     denied = _authentication_error(request)
     if denied is not None:
         return denied
     service = VmReadService(request.app.state.database)
-    virtual_machines = service.list_vms(limit=page_size, offset=(page - 1) * page_size)
+    virtual_machines = service.list_vms(
+        limit=page_size,
+        offset=(page - 1) * page_size,
+        state=state,
+        host_id=host_id,
+    )
     payload = VmListResponse(
-        items=[vm_summary(item) for item in virtual_machines],
-        total=service.count_vms(),
+        items=[vm_summary(item, request.app.state.database) for item in virtual_machines],
+        total=service.count_vms(state=state, host_id=host_id),
         page=page,
         page_size=page_size,
     )
@@ -100,7 +117,7 @@ async def internal_host_detail(request: Request, host_id: str) -> JSONResponse:
     if detail is None:
         return _not_found("host_not_found", "节点不存在")
     metrics = HostMetricsHistoryStore(request.app.state.database).query(host_id)
-    payload = host_detail_response(detail, metrics)
+    payload = host_detail_response(detail, metrics, request.app.state.database)
     return _response(payload)
 
 
@@ -124,6 +141,7 @@ async def internal_vm_detail(
         detail,
         service.snapshots(host_id, domain_uuid),
         MetricsHistoryStore(request.app.state.database).query(host_id, domain_uuid),
+        request.app.state.database,
     )
     return _response(payload)
 

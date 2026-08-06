@@ -1,5 +1,6 @@
 """Read-only discovery of existing libvirt storage pools and volumes."""
 
+import logging
 from dataclasses import dataclass, replace
 
 from sqlalchemy import select
@@ -20,6 +21,8 @@ from nexora.resources.storage_parser import (
     parse_volume_observation,
 )
 
+logger = logging.getLogger(__name__)
+
 MAX_POOLS = 5_000
 MAX_VOLUMES = 100_000
 
@@ -28,6 +31,7 @@ MAX_VOLUMES = 100_000
 class StorageDiscoveryResult:
     pools: SnapshotResult
     volumes: SnapshotResult
+    warnings: tuple[str, ...] = ()
 
 
 class StorageDiscoveryError(RuntimeError):
@@ -67,17 +71,18 @@ class StorageDiscoveryService:
             active = {observation.native_id for observation, info in pools if info.active}
             authoritative_parents = active | self._missing_pool_ids(host_id)
             volumes: list[ResourceObservation] = []
+            warnings: list[str] = []
             for pool, info in pools:
                 if not info.active:
                     continue
-                volumes.extend(
-                    self._volumes(
-                        host_id,
-                        host.libvirt_uri,
-                        pool,
-                        sudo,
-                    )
+                pool_volumes, pool_warnings = self._volumes(
+                    host_id,
+                    host.libvirt_uri,
+                    pool,
+                    sudo,
                 )
+                volumes.extend(pool_volumes)
+                warnings.extend(pool_warnings)
                 if len(volumes) > MAX_VOLUMES:
                     raise StorageDiscoveryError("volume count exceeds safety limit")
             volume_result = self.store.complete_scan(
@@ -88,7 +93,7 @@ class StorageDiscoveryService:
         except Exception as exc:
             self.store.fail_scan(volume_scan.id, str(exc))
             raise
-        return StorageDiscoveryResult(pool_result, volume_result)
+        return StorageDiscoveryResult(pool_result, volume_result, tuple(warnings))
 
     def read_pool(self, host_id: str, pool_uuid: str) -> ResourceObservation:
         """Read one authoritative pool without changing peer resource state."""
@@ -192,7 +197,7 @@ class StorageDiscoveryService:
         uri: str,
         pool: ResourceObservation,
         sudo: bool,
-    ) -> list[ResourceObservation]:
+    ) -> tuple[list[ResourceObservation], list[str]]:
         output = self._command(
             host_id,
             ("-c", uri, "vol-list", pool.native_id),
@@ -201,9 +206,11 @@ class StorageDiscoveryService:
         )
         names = parse_volume_list(output)
         writable = pool.details.get("pool_type") in WRITABLE_POOL_TYPES
-        return [
-            replace(
-                parse_volume_observation(
+        volumes: list[ResourceObservation] = []
+        warnings: list[str] = []
+        for name in names:
+            try:
+                observation = parse_volume_observation(
                     pool.native_id,
                     self._command(
                         host_id,
@@ -211,11 +218,23 @@ class StorageDiscoveryService:
                         sudo,
                         "storage volume XML",
                     ),
-                ),
-                status=ResourceStatus.MANAGED if writable else ResourceStatus.READ_ONLY,
+                )
+            except (StorageDiscoveryError, ValueError) as exc:
+                logger.warning(
+                    "skipping unreadable storage volume %s in pool %s: %s",
+                    name,
+                    pool.native_id,
+                    exc,
+                )
+                warnings.append(f"{pool.native_id}/{name}")
+                continue
+            volumes.append(
+                replace(
+                    observation,
+                    status=ResourceStatus.MANAGED if writable else ResourceStatus.READ_ONLY,
+                )
             )
-            for name in names
-        ]
+        return volumes, warnings
 
     def _command(
         self,

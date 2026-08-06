@@ -83,19 +83,24 @@ export function VmActions({ data }: { data: VmDetail }) {
           {writable && data.active && data.persistent && (
             <ConfirmAction label="保存运行状态" description="虚拟机将停止并保存当前运行状态。" loading={loading === "managed_save"} onConfirm={() => run("managed_save")} />
           )}
+          {writable && !data.active && data.persistent && (
+            <Button className="nx-btn-info" onClick={() => setRemoveMode("rename")}>重命名</Button>
+          )}
+        </Flex>
+      </Flex>
+      {(writable && data.active) || (writable && !data.active && data.persistent) ? (
+        <Flex className="nx-vm-danger-row" justify="flex-end" align="center" gap={8}>
+          <span className="nx-vm-danger-label">危险操作</span>
           {writable && data.active && (
             <Dropdown menu={{ items: dangerousItems, onClick: ({ key }) => setDangerousAction(key as DangerousAction) }}>
               <Button className="nx-btn-danger">强制操作</Button>
             </Dropdown>
           )}
           {writable && !data.active && data.persistent && (
-            <Button className="nx-btn-info" onClick={() => setRemoveMode("rename")}>重命名</Button>
-          )}
-          {writable && !data.active && data.persistent && (
             <Button className="nx-btn-danger" onClick={() => setRemoveMode("delete")}>删除</Button>
           )}
         </Flex>
-      </Flex>
+      ) : null}
       {error && <Alert type="error" showIcon={false} message={error} />}
       <DangerousActionModal
         action={dangerousAction}

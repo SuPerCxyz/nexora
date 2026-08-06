@@ -20,10 +20,11 @@ export function OverviewPage() {
   if (!summary) return <PageLoading />;
   const healthy = summary.host_total > 0 && summary.host_ready === summary.host_total;
   const attention = summary.failed_tasks > 0;
+  const hostSynced = summary.host_total > 0 && summary.host_synced === summary.host_total;
 
   return (
-    <Space orientation="vertical" size={20} className="nx-page-stack">
-      <Flex justify="space-between" align="center" wrap gap={12}>
+    <Space orientation="vertical" size={12} className="nx-page-stack">
+      <Flex className="nx-detail-header" justify="space-between" align="start" wrap gap={16}>
         <Typography.Title level={2}>总览</Typography.Title>
         <StatusTag
           label={attention ? `${summary.failed_tasks} 项需关注` : healthy ? "运行正常" : "等待节点状态"}
@@ -33,13 +34,25 @@ export function OverviewPage() {
       <div className="nx-metric-grid">
         <Metric title="节点在线" value={`${summary.host_ready} / ${summary.host_total}`} href="/hosts" />
         <Metric title="虚拟机运行" value={`${summary.vm_running} / ${summary.vm_total}`} href="/vms" />
+        <Metric title="存储卷" value={String(summary.storage_volume_total)} href="/storage" />
         <Metric title="进行中" value={String(summary.active_tasks)} href="/tasks" />
+        <Metric title="排队中" value={String(summary.task_pending)} href="/tasks" />
         <Metric title="需关注" value={String(summary.failed_tasks)} href="/tasks" />
       </div>
+      <Card title="虚拟机状态分布">
+        <div className="nx-metric-grid">
+          <Metric title="运行中" value={String(summary.vm_running)} href="/vms" />
+          <Metric title="已暂停" value={String(summary.vm_paused)} href="/vms" />
+          <Metric title="已停止" value={String(summary.vm_stopped)} href="/vms" />
+          <Metric title="存储池" value={String(summary.storage_pool_total)} href="/storage" />
+        </div>
+      </Card>
       <Card title="子系统状态" className="nx-system-card">
         <SystemRow name="计算节点" detail={`${summary.host_ready} 个可达 · ${summary.host_total - summary.host_ready} 个待处理`} href="/hosts" label={summary.host_total ? (healthy ? "正常" : "需关注") : "未接入"} tone={healthy ? "running" : summary.host_total ? "warning" : "unknown"} />
-        <SystemRow name="虚拟机" detail={`${summary.vm_running} 个运行中 · ${summary.vm_total - summary.vm_running} 个已停止`} href="/vms" label={summary.vm_total ? "正常" : "未发现"} tone={summary.vm_total ? "running" : "unknown"} />
-        <SystemRow name="资源同步" detail={`${summary.host_synced} / ${summary.host_total} 个节点已同步`} href="/hosts" label={summary.host_synced ? "已同步" : "待同步"} tone={summary.host_synced ? "running" : "unknown"} />
+        <SystemRow name="虚拟机" detail={`${summary.vm_running} 个运行中 · ${summary.vm_paused} 个已暂停 · ${summary.vm_stopped} 个已停止`} href="/vms" label={summary.vm_total ? "正常" : "未发现"} tone={summary.vm_total ? "running" : "unknown"} />
+        <SystemRow name="资源同步" detail={`${summary.host_synced} / ${summary.host_total} 个节点已同步`} href="/hosts" label={summary.host_synced ? "已同步" : "待同步"} tone={hostSynced ? "running" : summary.host_total ? "warning" : "unknown"} />
+        <SystemRow name="存储" detail={`${summary.storage_pool_total} 个存储池 · ${summary.storage_volume_total} 个卷`} href="/storage" label={summary.storage_volume_total ? "正常" : "未发现"} tone={summary.storage_volume_total ? "running" : "unknown"} />
+        <SystemRow name="任务" detail={`${summary.active_tasks} 个进行中 · ${summary.task_pending} 个排队 · ${summary.failed_tasks} 个失败`} href="/tasks" label={attention ? "需关注" : "空闲"} tone={attention ? "warning" : summary.active_tasks ? "running" : "unknown"} />
       </Card>
     </Space>
   );

@@ -3,7 +3,9 @@
 import json
 
 from lxml import etree
+from sqlalchemy import text
 
+from nexora.db import Database
 from nexora.hosts.models import Host
 from nexora.hosts.read_service import HostDetail
 from nexora.resources.models import ResourceIndex
@@ -36,26 +38,76 @@ def host_summary(host: Host) -> HostSummary:
     )
 
 
-def vm_summary(item: VmListItem) -> VmSummary:
+def vm_summary(item: VmListItem, database: Database | None = None) -> VmSummary:
     vcpus = item.details.get("current_vcpus")
     memory_kib = item.details.get("memory_kib")
+    state = str(item.details.get("state", item.resource.status))
     return VmSummary(
         resource_id=item.resource.id,
         host_id=item.resource.host_id,
         native_id=item.resource.native_id,
         name=item.resource.display_name,
         host_name=item.host_name,
-        state=str(item.details.get("state", item.resource.status)),
+        state=state,
         status=item.resource.status,
         vcpus=vcpus if isinstance(vcpus, int) else None,
         memory_mib=memory_kib // 1024 if isinstance(memory_kib, int) else None,
         last_seen_at=item.resource.last_seen_at,
+        needs_restart=(
+            _needs_restart(database, item.resource.host_id, item.resource.native_id, state)
+            if database is not None
+            else False
+        ),
     )
+
+
+_CONFIG_CHANGE_TASK_TYPES = (
+    "vm.cpu_change",
+    "vm.memory_change",
+    "vm.disk_change",
+    "vm.network_change",
+    "vm.advanced_change",
+    "vm.xml_restore",
+)
+
+
+def _needs_restart(
+    database: Database,
+    host_id: str,
+    vm_uuid: str,
+    state: str,
+) -> bool:
+    if state != "running":
+        return False
+    in_types = ", ".join(f"'{item}'" for item in _CONFIG_CHANGE_TASK_TYPES)
+    with database.session() as session:
+        config = session.execute(
+            text(
+                f"SELECT MAX(finished_at) FROM tasks "
+                f"WHERE host_id = :host_id AND vm_uuid = :vm_uuid "
+                f"AND task_type IN ({in_types}) AND status = 'succeeded'"
+            ),
+            {
+                "host_id": host_id,
+                "vm_uuid": vm_uuid,
+            },
+        ).scalar()
+        started = session.execute(
+            text(
+                "SELECT MAX(finished_at) FROM tasks "
+                "WHERE host_id = :host_id AND vm_uuid = :vm_uuid "
+                "AND task_type = 'vm.lifecycle' AND status = 'succeeded' "
+                "AND input_summary LIKE '%\"action\":\"start\"%'"
+            ),
+            {"host_id": host_id, "vm_uuid": vm_uuid},
+        ).scalar()
+    return config is not None and (started is None or config > started)
 
 
 def host_detail_response(
     detail: HostDetail,
     metrics: list[dict[str, object]],
+    database: Database | None = None,
 ) -> HostDetailResponse:
     return HostDetailResponse(
         host=host_summary(detail.host),
@@ -63,7 +115,7 @@ def host_detail_response(
         libvirt_uri=detail.host.libvirt_uri,
         resource_counts=detail.resource_counts,
         virtual_machines=[
-            vm_summary(VmListItem(item, detail.host.name, _details(item.details_json)))
+            vm_summary(VmListItem(item, detail.host.name, _details(item.details_json)), database)
             for item in detail.virtual_machines
         ],
         features=host_features(detail.capabilities, detail.pci_devices),
@@ -78,10 +130,11 @@ def vm_detail_response(
     detail: VmDetail,
     snapshots: list[VmSnapshotView],
     metrics: list[dict[str, object]],
+    database: Database | None = None,
 ) -> VmDetailResponse:
     values = detail.details
     return VmDetailResponse(
-        vm=vm_summary(VmListItem(detail.resource, detail.host.name, values)),
+        vm=vm_summary(VmListItem(detail.resource, detail.host.name, values), database),
         active=bool(values.get("active", False)),
         persistent=bool(values.get("persistent", False)),
         autostart=bool(values.get("autostart", False)),

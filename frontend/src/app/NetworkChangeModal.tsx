@@ -41,7 +41,7 @@ export function NetworkChangeModal({
   }
 
   return <Modal title={kind === "bridge" ? "创建 Bridge" : "创建 VLAN"} open={open} onCancel={onClose} footer={null} destroyOnHidden>
-    <Space orientation="vertical" size={16} className="nx-page-stack">
+    <Space orientation="vertical" size={12} className="nx-page-stack">
       <Alert type="warning" showIcon={false} message="变更仅作用于运行态，不修改持久化配置；失败时自动执行回滚脚本。" />
       {!preview ? <Form form={form} layout="vertical" requiredMark={false}>
         {kind === "bridge" ? <>

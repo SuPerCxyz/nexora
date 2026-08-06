@@ -30,8 +30,8 @@ export function MediaPage() {
     catch (caught) { setError(caught instanceof Error ? caught : new Error("访问凭据创建失败")); }
     finally { setIssuingId(null); }
   }
-  return <Space orientation="vertical" size={20} className="nx-page-stack">
-    <Flex className="nx-detail-header" justify="space-between" align="center" gap={16} wrap>
+  return <Space orientation="vertical" size={12} className="nx-page-stack">
+    <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
       <div><Typography.Title level={2}>平台媒体库</Typography.Title><Typography.Text type="secondary">只读索引平台镜像与 ISO，原始文件不会被修改</Typography.Text></div>
       {activeTaskId ? <Button className="nx-btn-info" href={`/tasks/${activeTaskId}`}>查看扫描任务</Button> : <Button className="nx-btn-primary" loading={scanning} onClick={scan}>扫描媒体库</Button>}
     </Flex>

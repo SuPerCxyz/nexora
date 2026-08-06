@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
 from nexora.db import Database
@@ -39,33 +39,51 @@ class VmReadService:
     def __init__(self, database: Database) -> None:
         self.database = database
 
-    def list_vms(self, *, limit: int = 1_000, offset: int = 0) -> list[VmListItem]:
+    def list_vms(
+        self,
+        *,
+        limit: int = 1_000,
+        offset: int = 0,
+        state: str | None = None,
+        host_id: str | None = None,
+    ) -> list[VmListItem]:
         if not 1 <= limit <= 5_000:
             raise ValueError("invalid VM result limit")
         if offset < 0:
             raise ValueError("invalid VM result offset")
-        statement = (
+        statement = self._vm_statement(host_id=host_id)
+        with self.database.session() as session:
+            rows = list(session.execute(statement))
+        items = [
+            VmListItem(resource, host_name, _details(resource.details_json))
+            for resource, host_name in rows
+        ]
+        if state is not None:
+            items = [item for item in items if str(item.details.get("state", "")) == state]
+        return items[offset : offset + limit]
+
+    def count_vms(self, *, state: str | None = None, host_id: str | None = None) -> int:
+        if state is None and host_id is None:
+            statement = (
+                select(func.count())
+                .select_from(ResourceIndex)
+                .where(ResourceIndex.resource_type == ResourceType.VIRTUAL_MACHINE)
+            )
+            with self.database.session() as session:
+                return session.scalar(statement) or 0
+        return len(self.list_vms(limit=5_000, state=state, host_id=host_id))
+
+    @staticmethod
+    def _vm_statement(*, host_id: str | None = None) -> Select[tuple[ResourceIndex, str]]:
+        conditions = [ResourceIndex.resource_type == ResourceType.VIRTUAL_MACHINE]
+        if host_id is not None:
+            conditions.append(ResourceIndex.host_id == host_id)
+        return (
             select(ResourceIndex, Host.name)
             .join(Host, Host.id == ResourceIndex.host_id)
-            .where(ResourceIndex.resource_type == ResourceType.VIRTUAL_MACHINE)
+            .where(*conditions)
             .order_by(ResourceIndex.display_name, Host.name)
-            .offset(offset)
-            .limit(limit)
         )
-        with self.database.session() as session:
-            return [
-                VmListItem(resource, host_name, _details(resource.details_json))
-                for resource, host_name in session.execute(statement)
-            ]
-
-    def count_vms(self) -> int:
-        statement = (
-            select(func.count())
-            .select_from(ResourceIndex)
-            .where(ResourceIndex.resource_type == ResourceType.VIRTUAL_MACHINE)
-        )
-        with self.database.session() as session:
-            return session.scalar(statement) or 0
 
     def detail(self, host_id: str, domain_uuid: str) -> VmDetail | None:
         canonical_uuid = str(UUID(domain_uuid))

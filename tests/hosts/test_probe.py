@@ -77,6 +77,26 @@ class ProbeBackend:
         raise AssertionError(remote_command)
 
 
+class PasswordlessToolBackend(ProbeBackend):
+    """Tool discovery must not wrap shell builtins with env on any user."""
+
+    def run(
+        self,
+        profile: SSHConnectionProfile,
+        remote_command: str,
+        *,
+        timeout: int,
+        stdin: bytes | None,
+        cancel_event: Event | None,
+    ) -> ProcessResult:
+        if "command -v" in remote_command:
+            assert "env" not in remote_command, remote_command
+            return _result(stdout=b"/usr/bin/virsh\n")
+        return super().run(
+            profile, remote_command, timeout=timeout, stdin=stdin, cancel_event=cancel_event
+        )
+
+
 @pytest.fixture
 def probe_runtime(settings: Settings) -> Iterator[tuple[Database, HostProbeService, Host]]:
     database = Database(settings)
@@ -124,16 +144,43 @@ def test_probe_persists_system_libvirt_tools_and_existing_vm_ids(
         assert 22 == count
 
 
-def _host() -> Host:
+def test_probe_uses_sudo_path_for_tools_on_passwordless_sudo_host(
+    settings: Settings,
+) -> None:
+    database = Database(settings)
+    upgrade_database(database)
+    with database.session() as session:
+        session.add(_host(ssh_username="ubuntu", sudo_mode=SudoMode.PASSWORDLESS))
+    executor = RemoteExecutor(
+        Resolver(settings.data_dir / "hostkeys" / "host.known_hosts"),
+        Audit(),
+        backend=PasswordlessToolBackend(),
+    )
+    probe = HostProbeService(database, executor)
+    try:
+        report = probe.run("host-1")
+    finally:
+        database.dispose()
+
+    assert report.healthy is True
+    capabilities = {item.key: item for item in report.observations}
+    assert "normal" == capabilities["tool.virsh"].status
+
+
+def _host(
+    *,
+    ssh_username: str = "root",
+    sudo_mode: SudoMode = SudoMode.NONE,
+) -> Host:
     now = datetime.now(UTC)
     return Host(
         id="host-1",
         name="node-one",
         address="host.example.test",
         ssh_port=22,
-        ssh_username="root",
+        ssh_username=ssh_username,
         authentication_method=AuthenticationMethod.PRIVATE_KEY,
-        sudo_mode=SudoMode.NONE,
+        sudo_mode=sudo_mode,
         libvirt_uri="qemu:///system",
         status=HostStatus.READY,
         labels_json="[]",

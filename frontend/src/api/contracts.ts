@@ -26,8 +26,13 @@ export type OverviewSummary = {
   host_synced: number;
   vm_total: number;
   vm_running: number;
+  vm_paused: number;
+  vm_stopped: number;
   active_tasks: number;
+  task_pending: number;
   failed_tasks: number;
+  storage_pool_total: number;
+  storage_volume_total: number;
 };
 
 export type HostSummary = {
@@ -51,6 +56,7 @@ export type VmSummary = {
   vcpus: number | null;
   memory_mib: number | null;
   last_seen_at: string;
+  needs_restart: boolean;
 };
 
 export type PaginatedResponse<T> = {
@@ -208,6 +214,8 @@ export type TaskSummary = {
   resumable: boolean;
   retry_count: number;
   max_retries: number;
+  host_id: string | null;
+  host_name: string | null;
 };
 
 export type TaskStepSummary = {

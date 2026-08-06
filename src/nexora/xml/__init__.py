@@ -17,6 +17,7 @@ from nexora.xml.cdrom import (
     CdromConfigError,
     CdromHttpChange,
     CdromMediaChange,
+    apply_cdrom_add,
     apply_cdrom_http,
     apply_cdrom_media,
 )
@@ -105,6 +106,7 @@ __all__ = [
     "XmlSafetyError",
     "XmlStructureError",
     "apply_advanced_device_change",
+    "apply_cdrom_add",
     "apply_cdrom_http",
     "apply_cdrom_media",
     "apply_cpu_topology",

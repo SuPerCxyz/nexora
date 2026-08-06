@@ -30,9 +30,15 @@ def build_network_topology(
         if item.resource_type == ResourceType.VIRTUAL_MACHINE
         and item.status != ResourceStatus.MISSING
     ]
+    pci_devices = [
+        item
+        for item in resources
+        if item.resource_type == ResourceType.PCI_DEVICE
+        and item.status != ResourceStatus.MISSING
+    ]
     nodes, details = _interface_nodes(host, interfaces)
     edges = _interface_edges(nodes, details)
-    nodes, edges = _virtual_machine_nodes(nodes, edges, details, virtual_machines)
+    nodes, edges = _virtual_machine_nodes(nodes, edges, details, virtual_machines, pci_devices)
     nodes, edges = _mark_management(nodes, edges)
     return NetworkTopology(host.id, tuple(nodes), tuple(edges))
 
@@ -70,13 +76,14 @@ def _interface_edges(
     details: dict[str, dict[str, object]],
 ) -> list[TopologyEdge]:
     known = {node.id for node in nodes}
+    by_label = {node.label: node.id for node in nodes}
     edges: list[TopologyEdge] = []
     for node in nodes:
         item = details[node.id]
-        parent = _native_reference(item.get("parent_ifindex"), known)
+        parent = _resolve_reference(item.get("parent_ifindex"), known, by_label)
         if parent is not None:
             edges.append(_edge(parent, node.id, "parent", details))
-        master = _native_reference(item.get("master_ifindex"), known)
+        master = _resolve_reference(item.get("master_ifindex"), known, by_label)
         if master is not None:
             source, target = (
                 (master, node.id) if node.node_type in {"vnet", "tap"} else (node.id, master)
@@ -90,8 +97,13 @@ def _virtual_machine_nodes(
     edges: list[TopologyEdge],
     interface_details: dict[str, dict[str, object]],
     virtual_machines: list[ResourceIndex],
+    pci_devices: list[ResourceIndex],
 ) -> tuple[list[TopologyNode], list[TopologyEdge]]:
     interface_by_name = {node.label: node.id for node in nodes}
+    pci_by_address = {
+        _text(_details(item).get("address"), _text(item.native_id, "")): item
+        for item in pci_devices
+    }
     for vm in virtual_machines:
         vm_id = f"vm:{vm.native_id}"
         vm_details = _details(vm)
@@ -106,26 +118,87 @@ def _virtual_machine_nodes(
             )
         )
         interfaces = vm_details.get("interfaces")
-        if not isinstance(interfaces, list):
+        nic_count = 0
+        if isinstance(interfaces, list):
+            if len(interfaces) > MAX_VM_INTERFACES:
+                raise ValueError("VM interface count exceeds topology limit")
+            for index, value in enumerate(interfaces):
+                if not isinstance(value, dict):
+                    continue
+                nic_id = f"nic:{vm.native_id}:{index}"
+                nic = {str(key): item for key, item in value.items()}
+                label = _text(nic.get("mac"), f"NIC {index + 1}")
+                nodes.append(TopologyNode(nic_id, label, "vm_nic", vm_state, nic))
+                nic_count += 1
+                target_name = _text(nic.get("target"), "")
+                source_name = _text(nic.get("source"), "")
+                host_interface = interface_by_name.get(target_name) or interface_by_name.get(
+                    source_name
+                )
+                if host_interface is not None:
+                    edges.append(_edge(host_interface, nic_id, "vm_attachment", interface_details))
+                edges.append(TopologyEdge(f"{nic_id}>{vm_id}", nic_id, vm_id, "belongs_to"))
+        host_devices = vm_details.get("host_devices")
+        if isinstance(host_devices, list):
+            for value in host_devices:
+                if not isinstance(value, dict) or value.get("type") != "pci":
+                    continue
+                address = _hostdev_address(value)
+                if address is None:
+                    continue
+                pci = pci_by_address.get(address)
+                if pci is None or not _is_pci_network_card(_details(pci)):
+                    continue
+                nic_id = f"hostdev:{vm.native_id}:{address}"
+                label = _pci_label(address, _details(pci))
+                nodes.append(
+                    TopologyNode(
+                        nic_id,
+                        label,
+                        "vm_nic",
+                        vm_state,
+                        {"pci_address": address, "passthrough": True},
+                    )
+                )
+                nic_count += 1
+                edges.append(TopologyEdge(f"{nic_id}>{vm_id}", nic_id, vm_id, "belongs_to"))
+        if nic_count == 0:
             continue
-        if len(interfaces) > MAX_VM_INTERFACES:
-            raise ValueError("VM interface count exceeds topology limit")
-        for index, value in enumerate(interfaces):
-            if not isinstance(value, dict):
-                continue
-            nic_id = f"nic:{vm.native_id}:{index}"
-            nic = {str(key): item for key, item in value.items()}
-            label = _text(nic.get("mac"), f"NIC {index + 1}")
-            nodes.append(TopologyNode(nic_id, label, "vm_nic", vm_state, nic))
-            target_name = _text(nic.get("target"), "")
-            source_name = _text(nic.get("source"), "")
-            host_interface = interface_by_name.get(target_name) or interface_by_name.get(
-                source_name
-            )
-            if host_interface is not None:
-                edges.append(_edge(host_interface, nic_id, "vm_attachment", interface_details))
-            edges.append(TopologyEdge(f"{nic_id}>{vm_id}", nic_id, vm_id, "belongs_to"))
     return nodes, _deduplicate_edges(edges)
+
+
+def _hostdev_address(value: dict[str, object]) -> str | None:
+    address = value.get("address")
+    if not isinstance(address, dict):
+        return None
+    domain = _text(address.get("domain"), "")
+    bus = _text(address.get("bus"), "")
+    slot = _text(address.get("slot"), "")
+    function = _text(address.get("function"), "")
+    if not (domain and bus and slot and function):
+        return None
+    try:
+        return (
+            f"{int(domain, 16):04x}:{int(bus, 16):02x}:"
+            f"{int(slot, 16):02x}.{int(function, 16)}"
+        )
+    except ValueError:
+        return None
+
+
+def _is_pci_network_card(details: dict[str, object]) -> bool:
+    device_class = _text(details.get("class"), "")
+    return device_class.startswith("0x02") or _text(details.get("product"), "").lower() in {
+        "ethernet controller",
+        "network controller",
+    } or "network" in _text(details.get("product"), "").lower()
+
+
+def _pci_label(address: str, details: dict[str, object]) -> str:
+    product = _text(details.get("product"), "")
+    if product:
+        return f"{address} · {product}"
+    return address
 
 
 def _mark_management(
@@ -188,11 +261,17 @@ def _interface_id(native_id: str) -> str:
     return f"if:{native_id}"
 
 
-def _native_reference(value: object, known: set[str]) -> str | None:
-    if not isinstance(value, int) or value < 1:
-        return None
-    candidate = f"if:{value}"
-    return candidate if candidate in known else None
+def _resolve_reference(
+    value: object,
+    known: set[str],
+    by_label: dict[str, str],
+) -> str | None:
+    if isinstance(value, int) and value >= 1:
+        candidate = f"if:{value}"
+        return candidate if candidate in known else None
+    if isinstance(value, str) and value:
+        return by_label.get(value)
+    return None
 
 
 def _has_address(details: dict[str, object], management_address: str) -> bool:

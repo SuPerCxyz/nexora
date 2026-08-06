@@ -1,4 +1,5 @@
 import { internalRequest } from "./client";
+import type { TaskCreated } from "./contracts";
 
 export type VmConfiguration = {
   vm: { name: string; host_id: string; native_id: string; state: string; active: boolean; persistent: boolean };
@@ -9,7 +10,8 @@ export type VmConfiguration = {
   disks: Array<Record<string, string | number | boolean | null>>;
   interfaces: Array<Record<string, string | number | boolean | null>>;
   networks: Array<{ resource_id: string; kind: string; name: string }>;
-  storage_volumes: Array<{ resource_id: string; native_id: string; name: string; generation: number; persistent_hash: string | null; pool_name: string; format: string | null; path: string | null; capacity_bytes: number | null }>;
+  storage_volumes: Array<{ resource_id: string; native_id: string; name: string; generation: number; persistent_hash: string | null; pool_name: string; format: string | null; path: string | null; capacity_bytes: number | null; used_by: string | null }>;
+  pools: Array<{ resource_id: string; name: string; pool_type: string }>;
   platform_isos: Array<{ id: string; name: string; size_bytes: number; sha256: string }>;
   platform_iso_enabled: boolean;
   host_devices: Array<{ resource_id: string; type: string; name: string; address: string; status: string }>;
@@ -63,4 +65,36 @@ export async function applyVmConfiguration(
     }),
   });
   return result.location;
+}
+
+export async function saveVmConfiguration(
+  configuration: VmConfiguration,
+  operation: string,
+  values: Record<string, unknown>,
+): Promise<TaskCreated> {
+  const path = `/internal/hosts/${encodeURIComponent(configuration.vm.host_id)}`
+    + `/vms/${encodeURIComponent(configuration.vm.native_id)}/configuration/save`;
+  return internalRequest<TaskCreated>(path, {
+    method: "POST",
+    body: JSON.stringify({ operation, values }),
+  });
+}
+
+export type VmXmlHistoryItem = {
+  id: string;
+  created_at: string;
+  xml_hash: string;
+};
+
+export function loadVmHistory(hostId: string, vmId: string): Promise<{ items: VmXmlHistoryItem[] }> {
+  return internalRequest(`/internal/hosts/${encodeURIComponent(hostId)}`
+    + `/vms/${encodeURIComponent(vmId)}/configuration/history`);
+}
+
+export function rollbackVmConfiguration(hostId: string, vmId: string, historyId: string): Promise<TaskCreated> {
+  return internalRequest<TaskCreated>(`/internal/hosts/${encodeURIComponent(hostId)}`
+    + `/vms/${encodeURIComponent(vmId)}/configuration/rollback`, {
+    method: "POST",
+    body: JSON.stringify({ history_id: historyId }),
+  });
 }

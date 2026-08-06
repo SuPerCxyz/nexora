@@ -11,20 +11,21 @@ P9：React 零旧前端与 VM 操作闭环。
 
 ## Current Task
 
-2026-08-05 决策：不实现节点级只读门禁。曾实现 `Host.read_only` 字段、迁移
-0023、`ensure_host_writable` 写路由守卫与 `HostSummary.read_only` 暴露，经确认
-kvm1 仅作为生产机器需人工保护、无需系统级只读能力后全部回滚，未落地任何代码
-改动；迁移链保持 head `20260803_0022`，前端与生产数据库均无变化。
+2026-08-06 更新：P9 阶段（P9-001~P9-010）全部完成并部署生产。P9-001 至
+P9-006 核心清理于 2026-08-05 部署（镜像 `sha256:47f531f429e7`，含空白磁盘、
+关机迁移、删除重命名、网卡配置、旧模板清理），随后 P9-007 操作区增强、
+P9-008 配置直接保存+XML 历史+待重启、P9-009 创建页三源合并、P9-010 操作闭环
+修复（审查 #1-#12）相继完成并部署。迁移链 head 现为 `20260803_0023`
+（`vm_xml_history`），生产数据库已升级。
 
-P9-001 至 P9-006 核心清理已完成：React VM 配置不再使用 `DOMParser` 解析 Jinja HTML，
-所有 VM 配置/创建/克隆/快照/删除重命名/网卡/存储/媒体/网络/节点操作均走同源
-internal JSON API。29 个兼容契约测试已全部迁移到 internal JSON API，旧兼容 POST
-路由已注销；17 个旧 POST 路由文件与 55 个业务模板已删除，仅保留 `react_shell.html`。
+历史决策：2026-08-05 曾实现节点级只读门禁（`Host.read_only`、迁移 0023、
+`ensure_host_writable` 守卫与 `HostSummary.read_only` 暴露），经确认 kvm1 仅作为
+生产机器需人工保护、无需系统级只读能力后全部回滚，未落地任何代码改动。
 
 P9-002 空白磁盘创建已完成：新建 `vms/blank_creation_*` 模块与 revision 0021 计划表，
 同任务先创建空白 qcow2/raw Volume 再定义 VM，含可恢复执行与权威验证；internal
-`/vm-create/blank-disk/*` 路由和 `/vms/create/blank-disk` React 页面已接入，入口可从
-VM 创建页进入。
+`/vm-create/blank-disk/*` 路由和 `/vms/create/blank-disk` React 页面已接入（现为
+创建页"磁盘来源"的"新建空盘"模式）。
 
 P9-003 关机迁移已完成：在克隆基础设施上新增 `preserve_identity` 模式，迁移保留源
 UUID 与 MAC、复制全部磁盘与 NVRAM、目标定义并验证，默认保留源定义与磁盘（源端
@@ -38,8 +39,31 @@ P9-004 VM 删除与重命名已完成：新建 `vms/remove_*` 模块与 revision
 P9-005 网卡完整配置已完成：新建 `xml/network.py` 与 `vms/network_changes.py`，
 支持网卡 attach/detach/update（MAC、Bridge/libvirt Network 切换、型号），复用
 `VmChangePlan` 三步任务与 live/config 门禁；VM 配置页新增"网络接口"区块。
+2026-08-06 修复运行中网卡 detach 断链（从 original XML 提取）与 update 命令
+（改 `virsh update-device --live --persistent`），并新增网卡更新弹窗（可改网络/
+型号/新 MAC）。
 
-P9-001 至 P9-006 未部署生产，待 Browser QA 与生产数据库副本复核后再部署。
+P9-007 操作与总览增强已完成：VM 详情强制关机/强制重启与删除归入独立"危险操作"
+行；总览页增加虚拟机状态分布、存储概况与任务排队信息；VM 列表支持按状态与节点
+过滤（`/internal/vms` 新增 `state`、`host_id` 参数），过滤与服务端分页协同。
+
+P9-008 VM 配置直接保存 + XML 历史回滚已完成：新增 `vm_xml_history` 表（revision
+0023，每 VM 保留最近 10 份配置前 XML 快照）与 save/history/rollback API；
+`vm.xml_restore` 任务 handler 已在 `app.py` 注册（三步：validate/define/refresh）；
+运行中 VM 配置变更后基于任务时序推断 `needs_restart` 并在列表/节点详情/VM 详情
+展示"待重启"标记。
+
+P9-009 创建页三源合并已完成：`/vms/create` 单页内通过"磁盘来源"切换"已有系统盘 /
+新建空盘 / 从平台镜像创建"三种方式；创建空盘与平台镜像前必须先选目标存储池；
+旧子路径 `/vms/create/blank-disk` 与 `/vms/create/platform-image` 保留并预选模式
+（原独立子页面组件已删除）。
+
+P9-010 VM 操作闭环修复（审查 #1-#12）已完成：运行中移除磁盘/网卡断链修复、网卡
+更新弹窗、本地 ISO 运行中热插拔（`change-media --live --persistent`）、CPU 拓扑
+乘积校验放宽为 ≤（兼容热插拔余量）+ 前端联动约束 + max≤1024/threads∈{1,2}、
+内存非法组合预检（discard+anonymous、file+private）、新增"添加光驱"能力、运行中
+改 CPU/内存提示、运行中磁盘 attach target 冲突预检。部署镜像
+`nexora:rollback-fixops-20260806T113801Z` 保留。
 
 P8-004 至 P8-010 DONE：React 已接管认证、节点接入、两类 VM 创建、存储、媒体、
 Bridge/VLAN、VM 生命周期、控制台、任务、审计、设置与交互式网络拓扑。所有 VM
@@ -289,8 +313,11 @@ worker/Tunnel/Session 零残留。PyPI websockify 因传递 Redis 依赖被拒�
 
 ## Remaining Work
 
-- P9-002～006 待 Browser QA 与生产数据库副本复核后部署。
+- 补充自动化测试缺口：`configuration/history|rollback` Web 单测、`needs_restart=True`
+  场景单测、`is_attachable_volume` 直接单元测试（见 TEST_STATUS 与审计报告）。
 - 在具备隔离测试设备的 Rocky 节点验证预绑定 `vfio-pci` PCI 直通和零残留清理。
+- 真实 Rocky 远端跑 `tests/integration/test_remote_vm_clone.py`（跨节点迁移）。
+- 启用 agent-browser 复核 1280/375px 密度（NEW-2 密度收紧未做视觉 QA）。
 - aarch64 与 Rocky 之外 RHEL 系发行版验证暂缓，不计入 P7 验收。
 
 ## Known Problems
@@ -640,9 +667,10 @@ worker/Tunnel/Session 零残留。PyPI websockify 因传递 Redis 依赖被拒�
 ## Next Actions
 
 1. 保持所有可导航产品页面由 React/Ant Design 接管的边界。
-2. P9-002～006 全量门禁已通过，待 Browser QA 与生产数据库副本复核后部署。
+2. P9-002～010 已全部完成并部署生产；迁移链 head `20260803_0023`。
 3. 具备隔离 IOMMU/`vfio-pci` 设备后执行 P7-006 最后一项真实验证。
 4. 不开展 aarch64 或 Rocky 之外 RHEL 系验证。
+5. 补充自动化测试缺口（XML 历史回滚、`needs_restart=True`、`is_attachable_volume`）。
 
 ## Resume Instructions
 
@@ -673,11 +701,96 @@ CIDR/gateway/DNS；恢复扩容必须同时验证目标 virtual size 与持久�
 
 ## Updated At
 
-2026-08-05 Asia/Shanghai
+2026-08-06 Asia/Shanghai
 
 ## Updated By
 
 OpenCode
+
+> 2026-08-06 网络拓扑增强：修复节点颜色混淆（`vm_nic` 蓝、`virtual_machine` 深灰、
+> `tap`/`veth` 独立浅色），支持 PCI 透传网卡展示（hostdev→pci_device 地址匹配，
+> 生成 vm_nic 节点并关联 VM，提示"PCI 透传"）。已部署，kvm3 OpenWrt 2 个 I211
+> 透传网卡验证通过。
+
+> 2026-08-06 文档同步（审计报告整改）：ROADMAP P9-002~P9-010 标 DONE 并新增
+> NEW-1~NEW-8 记录；PROJECT_STATUS 纠正"未部署"矛盾（P9-002~006 已于 2026-08-05
+> 部署，镜像 `sha256:47f531f429e7`），迁移链 head 更新为 `20260803_0023`；补
+> 测试缺口（XML 历史回滚、`needs_restart=True`、`is_attachable_volume`）。
+
+> 2026-08-06 虚拟机操作闭环修复（审查 #1-#12）：修复运行中移除磁盘/网卡失败
+> （detach 从 original XML 提取、网卡 update 改 update-device）、网卡更新按钮
+> 必失败（改弹窗编辑）、本地 ISO 运行中热插拔（change-media --live）、CPU 拓扑
+> 乘积改为 ≤（兼容热插拔余量）+ 前端联动约束 + max≤1024/threads∈{1,2}、
+> 内存非法组合预检、添加光驱能力、运行中改 CPU/内存加提示、运行中磁盘 attach
+> target 冲突预检。部署镜像 `nexora:rollback-fixops-20260806T113801Z` 保留。
+> 验证：后端 437 passed、25 skipped；前端 21 tests + build；ruff/mypy 通过。
+
+> 2026-08-06 创建虚拟机页面合并：`/vms/create` 单页内通过"磁盘来源"切换
+> 已有系统盘 / 新建空盘 / 从平台镜像创建三种方式；创建空盘与平台镜像前必须
+> 先选目标存储池；旧子路径保留并预选模式（删除了原独立子页面组件）。同步完成
+> 全局密度收紧（按钮 32px、Card/表格/间距压缩）与挂载卷/选盘格式白名单
+> （qcow2/qcow/raw/img，过滤 libvirt 误标 raw 的普通文件）。部署镜像
+> `nexora:rollback-savecfg-20260805T101541Z` 之前保留，本次未另建回滚标签。
+
+> 2026-08-05 配置直接保存 + XML 历史回滚 + 待重启标记：新增 `vm_xml_history` 表
+> （0023，每 VM 10 份快照）与 save/rollback/history API；配置页每区块"保存"直接
+> 创建任务（保留执行前重验），"历史版本"可回滚；运行中 VM 配置变更后显示"待重启"
+> 标志（基于任务记录推断）。favicon 与布局对齐同步完成。部署镜像
+> `nexora:rollback-savecfg-20260805T101541Z` 保留。
+
+> 2026-08-05 VM 配置页与测试稳定：挂载卷显示占用（`used_by` 禁用挂载+悬浮说明）、
+> 新增"新建卷"（Pool/名称/格式/容量→预检→任务）、配置区块收紧密度；移除三个 VM
+> 渲染测试显式 10s 超时，全量前端 21 测试稳定通过（根因：vm creation plan 在 jsdom
+> 下 8.5s，组合后超时）。部署镜像 `nexora:rollback-vmcfg-20260805T101541Z` 保留。
+
+> 2026-08-05 页面头部统一：所有列表/详情页统一 `nx-detail-header`（标题+副标题左、
+> 按钮右、`align="start"` 顶部对齐），有无副标题按钮位置一致；节点/虚拟机列表补
+> 副标题。部署镜像 `nexora:rollback-header-20260805T101541Z` 保留回滚。前端全量
+> 测试仍受既有资源累积型 flaky 影响（VM 创建预览/详情/配置渲染用例组合后拖慢后续
+> 用例），已提升 `asyncUtilTimeout`/`testTimeout` 缓解并记录，待专项修复。
+
+> 2026-08-05 过滤与拓扑统一：任务中心新增状态/节点过滤（`/internal/tasks` 补充
+> host_id/host_name），审计过滤移到标题行右侧即选即查，虚拟机/任务/审计过滤统一
+> `nx-filter-control` 模式；拓扑图颜色改为单一来源修复 VM 节点颜色与图例不符。
+> 部署镜像 `nexora:rollback-filters-20260805T101541Z` 保留回滚。
+
+> 2026-08-05 UI 一致性：补齐 `.nx-page-title` 头部样式（任务/审计/账户页标题布局
+> 统一）、审计页分页改用 Ant Design Pagination、fact/metric 卡片视觉统一；部署镜像
+> `nexora:rollback-uiuniform-20260805T101541Z` 保留回滚。前端全量测试存在既有 flaky
+> （App.test.tsx 内 VM 详情/配置页渲染用例在全量串行下偶发失败、单独运行通过），
+> 疑似文件内 async 泄漏（Cytoscape/Ant motion），已记录待专项修复；本次 UI 改动
+> 构建通过、相关用例单独通过。
+
+> 2026-08-05 能力探测修复：`command -v` 为 shell 内建，被 `env -- LC_ALL=C` 包装后
+> 无法执行，导致全部工具探测假阴性（ubuntu2604-kvm 的 tool.virsh required_missing、
+> 节点误标"能力受限"、无法创建虚拟机）。移除 env 包装后重新探测，节点恢复 ready、
+> 全部工具 normal。镜像 `nexora:rollback-toolfix-20260805T101541Z` 保留回滚。
+
+> 2026-08-05 网络标签可读化：节点类型/关系/告警映射中文，拓扑图悬浮显示详情，
+> 表格列带悬浮提示并新增图例。前端测试 21 通过、构建通过；全量前端存在 2 个既有
+> flaky 用例（VM 创建预览与旧 manage 地址，单独运行均通过，与本改动无关）。镜像
+> `nexora:rollback-nettips-20260805T101541Z` 保留回滚。
+
+> 2026-08-05 拓扑边修复：iproute2 JSON 的 master/link 为接口名而非 ifindex，导致
+> vlan/bridge/vnet 之间无边。`_resolve_reference` 支持按名称关联，VLAN 的 link 纳入
+> parent 解析；重扫 kvm1 后物理口→VLAN→Bridge→vnet→VM 链路完整建立。镜像
+> `nexora:rollback-topolink-20260805T091423Z` 保留回滚。
+
+> 2026-08-05 排查修复：kvm1 资源发现失败根因为 `tmp` 池含 `\xff` 非法字节卷名，
+> `parse_volume_list` 严格解码抛异常。修复：替换解码容错 + 单个不可读卷跳过并告警
+> （`storage_warnings`）。重新扫描 kvm1 成功：pools=7, volumes=64, interfaces=36,
+> storage_warnings=10；网络拓扑按物理口→VLAN/Bridge→vnet→VM 分层显示。镜像
+> `nexora:rollback-storagefix-20260805T084801Z` 保留回滚。
+
+> 2026-08-05 UI：完成 P9-007 操作区与总览增强。VM 详情危险操作独立成行；总览增加
+> 虚拟机状态分布、存储概况与任务排队；VM 列表支持状态/节点过滤。后端 pytest
+> 426 passed、25 skipped，前端 20 tests 与构建通过。
+>
+> 2026-08-05 部署：P9-007 部署到生产。新镜像 `nexora:latest` = `sha256:69a6eaa02c17`
+> （VM 危险操作分行、总览增强、VM 列表过滤），容器 healthy、监听 `0.0.0.0:8002`；
+> DB revision 保持 `20260803_0022`（无 schema 变化），`quick_check` ok，登录页 200，
+> 4 节点数据完整保留。回滚保留：镜像 `nexora:rollback-p9ui-20260805T074456Z`、
+> 备份 `/data/backups/nexora-predeploy-20260805T074456Z.tar.gz`。
 
 > 2026-08-05 部署：按确认部署最新版至生产。新镜像 `nexora:latest` =
 > `sha256:47f531f429e7`（含 P9-002 空白磁盘、P9-003 关机迁移、P9-004 删除重命名、

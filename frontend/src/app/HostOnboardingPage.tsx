@@ -44,7 +44,7 @@ export function HostOnboardingPage() {
   }
 
   return (
-    <Space className="nx-page-stack nx-create-page" orientation="vertical" size={24}>
+    <Space className="nx-page-stack nx-create-page" orientation="vertical" size={12}>
       <div className="nx-detail-header">
         <Space orientation="vertical" size={6}>
           <Button type="link" href="/hosts" icon={<ArrowLeftOutlined />} className="nx-back-link">

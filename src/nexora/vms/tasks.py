@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from nexora.db import Database
+from nexora.remote.executor import RemoteExecutor
 from nexora.tasks.coordinator import TaskContext
 from nexora.tasks.models import Task, TaskStepStatus
 from nexora.vms.contracts import LifecycleTaskInput, VmChangeTaskInput
@@ -125,3 +127,36 @@ class VmAdvancedChangeHandler:
         if service is None:
             raise ValueError("VM advanced change type is unsupported")
         return VmCpuChangeHandler(service)(context, task)
+
+
+@dataclass
+class VmXmlRestoreHandler:
+    database: Database
+    executor: RemoteExecutor
+
+    def __call__(self, context: TaskContext, task: Task) -> str:
+        from nexora.resources.domain_discovery import DomainDiscoveryService
+        from nexora.vms.creation_remote import VmCreationRemote
+        from nexora.vms.xml_history import VmXmlHistoryStore
+
+        if task.input_summary is None:
+            raise ValueError("XML restore task has no history snapshot reference")
+        snapshot = VmXmlHistoryStore(self.database).get(task.input_summary)
+        if (
+            snapshot is None
+            or snapshot.host_id != task.host_id
+            or snapshot.vm_uuid != task.vm_uuid
+        ):
+            raise ValueError("XML history snapshot scope mismatch")
+        content = snapshot.xml.encode("utf-8")
+        remote = VmCreationRemote(self.database, self.executor)
+        context.start_step(1, "validate")
+        remote.validate_xml(task.host_id, content)
+        context.finish_step(1)
+        context.start_step(2, "define")
+        remote.define(task.host_id, content)
+        context.finish_step(2)
+        context.start_step(3, "refresh")
+        DomainDiscoveryService(self.database, self.executor).run(task.host_id)
+        context.finish_step(3)
+        return "restored VM configuration XML"

@@ -116,6 +116,19 @@ def test_volume_list_parser_uses_fixed_header_column_for_names_with_spaces() -> 
     assert ["disk one.qcow2", "second.raw"] == parse_volume_list(content)
 
 
+def test_volume_list_parser_tolerates_invalid_utf8_names() -> None:
+    content = (
+        b" Name                 Path\n"
+        b"-----------------------------\n"
+        b" bad\xff\xff.md         /root/tmp/bad\xff\xff.md\n"
+    )
+
+    names = parse_volume_list(content)
+
+    assert 1 == len(names)
+    assert "\ufffd\ufffd" in names[0]
+
+
 def test_libvirt_network_parser_marks_complex_mode_partial() -> None:
     content = f"""\
 <network><name>routed</name><uuid>{UUID}</uuid><forward mode="route"/>

@@ -33,8 +33,13 @@ class OverviewSummary(BaseModel):
     host_synced: int
     vm_total: int
     vm_running: int
+    vm_paused: int
+    vm_stopped: int
     active_tasks: int
+    task_pending: int
     failed_tasks: int
+    storage_pool_total: int
+    storage_volume_total: int
 
 
 class HostSummary(BaseModel):
@@ -58,6 +63,7 @@ class VmSummary(BaseModel):
     vcpus: int | None
     memory_mib: int | None
     last_seen_at: datetime
+    needs_restart: bool = False
 
 
 class HostListResponse(BaseModel):

@@ -21,7 +21,7 @@ export function MediaCredentialModal({
     catch (caught) { setError(caught instanceof Error ? caught.message : "凭据撤销失败"); setRevoking(false); }
   }
   return <Modal title="ISO 访问凭据" open={credential !== null} onCancel={onClose} footer={null} maskClosable={false} destroyOnHidden>
-    {credential && <Space orientation="vertical" size={16} className="nx-page-stack">
+    {credential && <Space orientation="vertical" size={12} className="nx-page-stack">
       <Alert type="warning" showIcon={false} message="Bearer Token 只显示一次，不得写入日志或 URL。" />
       <CredentialValue label="Content URL" value={credential.content_url} />
       <CredentialValue label="Bearer Token" value={credential.token} />

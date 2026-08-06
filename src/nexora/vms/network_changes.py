@@ -225,16 +225,42 @@ class VmNetworkChangeService(VmCpuChangeService):
     ) -> CommandResult:
         host = self._host(host_id)
         change_type = self._current_plan.change_type
-        device_xml = _extract_interface_xml(full_xml, change_type, payload)
-        args = (
-            "-c",
-            host.libvirt_uri,
-            "attach-device",
-            self._current_plan.vm_uuid,
-            "/dev/stdin",
-            "--live",
-            "--persistent",
-        )
+        if change_type == "interface_attach":
+            device_xml = _extract_interface_xml(full_xml, change_type, payload)
+            args = (
+                "-c",
+                host.libvirt_uri,
+                "attach-device",
+                self._current_plan.vm_uuid,
+                "/dev/stdin",
+                "--live",
+                "--persistent",
+            )
+        elif change_type == "interface_detach":
+            device_xml = _extract_interface_xml(
+                self._current_plan.original_xml, change_type, payload
+            )
+            args = (
+                "-c",
+                host.libvirt_uri,
+                "detach-device",
+                self._current_plan.vm_uuid,
+                "/dev/stdin",
+                "--live",
+                "--persistent",
+            )
+        else:
+            # interface_update must replace the live device in place.
+            device_xml = _extract_interface_xml(full_xml, change_type, payload)
+            args = (
+                "-c",
+                host.libvirt_uri,
+                "update-device",
+                self._current_plan.vm_uuid,
+                "/dev/stdin",
+                "--live",
+                "--persistent",
+            )
         return self.executor.run(
             host_id,
             CommandSpec("virsh", args),
@@ -270,11 +296,11 @@ def _extract_interface_xml(
             if interface.get("type") == kind and _interface_source(interface) == source:
                 return etree.tostring(interface, encoding="UTF-8")
         raise VmChangeConflict("interface device not found in proposed XML")
-    mac = str(payload.get("mac") or "")
+    search_mac = str(payload.get("new_mac") or payload.get("mac") or "")
     for interface in root.findall("./devices/interface"):
-        if _interface_mac(interface) == mac:
+        if _interface_mac(interface) == search_mac:
             return etree.tostring(interface, encoding="UTF-8")
-    raise VmChangeConflict("interface device not found in original XML")
+    raise VmChangeConflict("interface device not found in XML")
 
 
 def _interface_mac(interface: etree._Element) -> str | None:

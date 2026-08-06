@@ -21,8 +21,13 @@ const overview = {
   host_synced: 2,
   vm_total: 3,
   vm_running: 2,
+  vm_paused: 1,
+  vm_stopped: 0,
   active_tasks: 0,
+  task_pending: 1,
   failed_tasks: 0,
+  storage_pool_total: 1,
+  storage_volume_total: 4,
 };
 
 beforeEach(() => {
@@ -119,6 +124,7 @@ describe("Ant Design core application", () => {
   it("renders Chinese VM states and configuration", async () => {
     window.history.replaceState({}, "", "/vms");
     stubApi({
+      "/internal/hosts?page=1&page_size=100": { items: [], total: 0, page: 1, page_size: 100 },
       "/internal/vms?page=1&page_size=20": {
         items: [{ resource_id: "resource-1", host_id: "host-1", native_id: "11111111-1111-1111-1111-111111111111", name: "web-01", host_name: "node-one", state: "running", status: "managed", vcpus: 4, memory_mib: 2048, last_seen_at: "2026-08-01T00:00:00Z" }],
         total: 1,
@@ -140,22 +146,11 @@ describe("Ant Design core application", () => {
         networks: [],
         isos: [],
       },
-    });
-    render(<App nonce="test-nonce" />);
-
-    expect(await screen.findByRole("heading", { name: "创建虚拟机" })).toBeInTheDocument();
-    const secureBoot = screen.getByRole("checkbox", { name: "Secure Boot" });
-    expect(secureBoot).toBeDisabled();
-
-    fireEvent.click(screen.getByRole("radio", { name: "UEFI" }));
-    expect(secureBoot).not.toBeDisabled();
-    expect(secureBoot).not.toBeChecked();
-    expect(screen.getByText("当前为 UEFI 非安全启动")).toBeInTheDocument();
-  });
-
-  it("supports UEFI non-secure boot for platform-image creation", async () => {
-    window.history.replaceState({}, "", "/vms/create/platform-image");
-    stubApi({
+      "/internal/vm-create/blank-disk/options": {
+        pools: [],
+        networks: [],
+        isos: [],
+      },
       "/internal/vm-create/platform-image/options": {
         media: [],
         targets: [],
@@ -165,13 +160,46 @@ describe("Ant Design core application", () => {
     });
     render(<App nonce="test-nonce" />);
 
-    expect(await screen.findByRole("heading", { name: "从平台镜像创建虚拟机" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "创建虚拟机" })).toBeInTheDocument();
+    const secureBoot = screen.getByRole("checkbox", { name: "Secure Boot" });
+    expect(secureBoot).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("radio", { name: "UEFI" }));
+    await waitFor(() => expect(secureBoot).not.toBeDisabled());
+    expect(secureBoot).not.toBeChecked();
+    expect(screen.getByText("当前为 UEFI 非安全启动")).toBeInTheDocument();
+  });
+
+  it("supports UEFI non-secure boot for platform-image creation", async () => {
+    window.history.replaceState({}, "", "/vms/create/platform-image");
+    stubApi({
+      "/internal/vm-create/options": {
+        volumes: [],
+        networks: [],
+        isos: [],
+      },
+      "/internal/vm-create/blank-disk/options": {
+        pools: [],
+        networks: [],
+        isos: [],
+      },
+      "/internal/vm-create/platform-image/options": {
+        media: [],
+        targets: [],
+        networks: [],
+        isos: [],
+      },
+    });
+    render(<App nonce="test-nonce" />);
+
+    expect(await screen.findByRole("heading", { name: "创建虚拟机" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "从平台镜像创建" })).toBeChecked();
     const secureBoot = screen.getByRole("checkbox", { name: "Secure Boot" });
     expect(secureBoot).toBeDisabled();
     fireEvent.click(screen.getByRole("radio", { name: "UEFI" }));
-    expect(secureBoot).not.toBeDisabled();
+    await waitFor(() => expect(secureBoot).not.toBeDisabled());
     expect(secureBoot).not.toBeChecked();
-    expect(screen.getByText("UEFI 默认使用非安全启动")).toBeInTheDocument();
+    expect(screen.getByText("当前为 UEFI 非安全启动")).toBeInTheDocument();
   });
 
   it("previews a VM creation plan without leaving React", async () => {
@@ -179,6 +207,17 @@ describe("Ant Design core application", () => {
     stubApi({
       "/internal/vm-create/options": {
         volumes: [{ id: "volume-1", host_id: "host-1", host_name: "node", pool_name: "images", name: "system.qcow2", format: "qcow2", capacity_bytes: 21474836480 }],
+        networks: [],
+        isos: [],
+      },
+      "/internal/vm-create/blank-disk/options": {
+        pools: [],
+        networks: [],
+        isos: [],
+      },
+      "/internal/vm-create/platform-image/options": {
+        media: [],
+        targets: [],
         networks: [],
         isos: [],
       },
@@ -205,7 +244,7 @@ describe("Ant Design core application", () => {
     expect(await screen.findByText("Domain XML Diff")).toBeInTheDocument();
     expect(screen.getByText("UEFI · 非安全启动")).toBeInTheDocument();
     expect(screen.getByLabelText("Domain XML Diff")).toHaveTextContent("+ <domain/>");
-  }, 10000);
+  });
 
   it("opens the mobile navigation drawer", async () => {
     stubApi({ "/internal/overview": overview });
@@ -306,7 +345,7 @@ describe("Ant Design core application", () => {
     expect(screen.getByRole("button", { name: "保存运行状态" })).toHaveClass("nx-btn-info");
     expect(screen.getByRole("button", { name: "强制操作" })).toHaveClass("nx-btn-danger");
     expect(screen.getByRole("button", { name: "强制操作" }).parentElement).toHaveClass(
-      "nx-vm-action-buttons",
+      "nx-vm-danger-row",
     );
     expect(screen.getByText("1 个透传网卡")).toBeInTheDocument();
     expect(screen.getByText("直通设备")).toBeInTheDocument();
@@ -314,7 +353,7 @@ describe("Ant Design core application", () => {
     expect(screen.getByText("0000:05:00.0")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "XML" }));
     expect(screen.getByText(/<domain>/)).toBeInTheDocument();
-  }, 10000);
+  });
 
   it("renders the legacy VM manage URL with React configuration", async () => {
     window.history.replaceState({}, "", "/manage/hosts/11111111-1111-1111-1111-111111111111/vms/22222222-2222-2222-2222-222222222222");
@@ -339,8 +378,8 @@ describe("Ant Design core application", () => {
     expect(screen.getByText("计算与内存")).toBeInTheDocument();
     expect(screen.getByText("磁盘与光驱")).toBeInTheDocument();
     expect(screen.getByText("直通设备与共享目录")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "预览 CPU Diff" })).toBeInTheDocument();
-  }, 10000);
+    expect(screen.getByRole("button", { name: "保存 CPU" })).toBeInTheDocument();
+  });
 
   it("renders the React task center with Chinese status tags", async () => {
     window.history.replaceState({}, "", "/tasks");

@@ -19,14 +19,15 @@ export const nexoraTheme: ThemeConfig = {
     colorTextDisabled: designTokens.textDisabled,
     colorLink: designTokens.textLink,
     borderRadius: 8,
-    controlHeight: 44,
+    controlHeight: 32,
     fontSize: 14,
     boxShadow: "none",
     boxShadowSecondary: "none",
+    motion: false,
   },
   components: {
     Button: { primaryShadow: "none", dangerShadow: "none" },
-    Card: { bodyPadding: 20, headerHeight: 52, headerBg: designTokens.backgroundCard },
+    Card: { bodyPadding: 16, headerHeight: 44, headerBg: designTokens.backgroundCard },
     Drawer: { colorBgElevated: designTokens.backgroundCard },
     Input: { activeBorderColor: designTokens.primary, hoverBorderColor: designTokens.primary },
     Menu: {
@@ -37,8 +38,8 @@ export const nexoraTheme: ThemeConfig = {
     },
     Table: {
       borderColor: designTokens.border,
-      cellPaddingBlock: 14,
-      cellPaddingInline: 16,
+      cellPaddingBlock: 10,
+      cellPaddingInline: 12,
       headerBg: designTokens.backgroundHover,
       headerColor: designTokens.textPrimary,
       rowHoverBg: designTokens.backgroundHover,

@@ -1,5 +1,8 @@
 import json
 from datetime import UTC, datetime
+from io import BytesIO
+
+from lxml import etree
 
 from nexora.config import Settings
 from nexora.db import Database
@@ -9,7 +12,7 @@ from nexora.resources.conflicts import ResourceBaseVersion, ResourceWriteGuard
 from nexora.resources.index_store import ResourceIndexStore
 from nexora.resources.models import ResourceIndex, ResourceStatus, ResourceType
 from nexora.tasks.locks import ResourceLockStore
-from nexora.vms.disk_changes import VmDiskChangeService
+from nexora.vms.disk_changes import VmDiskChangeService, _extract_device_xml
 from nexora.xml import DiskDetachChange, LibvirtXmlDocument
 from vms.test_cpu_changes import (
     DOMAIN_UUID,
@@ -208,3 +211,31 @@ def _vm_resource_id(database: Database) -> str:
             session.query(ResourceIndex).filter_by(resource_type=ResourceType.VIRTUAL_MACHINE).one()
         )
         return resource.id
+
+
+def test_live_detach_extracts_device_from_original_xml() -> None:
+    original = LibvirtXmlDocument.parse(DOMAIN_XML, expected_root="domain")
+    devices = original.root.find("devices")
+    disk = etree.SubElement(devices, "disk", type="file", device="disk")
+    etree.SubElement(disk, "target", dev="vda", bus="virtio")
+    etree.SubElement(disk, "source", file=VOLUME_KEY)
+
+    payload = {"source": VOLUME_KEY, "target": "vda"}
+    extracted = _extract_device_xml(original.serialize(), "disk_detach", payload)
+    tree = etree.parse(BytesIO(extracted))
+    disk = tree.getroot()
+    assert disk.get("device") == "disk"
+    assert disk.find("source").get("file") == VOLUME_KEY
+
+
+def test_live_attach_extracts_device_from_proposed_xml() -> None:
+    proposed = LibvirtXmlDocument.parse(DOMAIN_XML, expected_root="domain")
+    devices = proposed.root.find("devices")
+    disk = etree.SubElement(devices, "disk", type="file", device="disk")
+    etree.SubElement(disk, "target", dev="vda", bus="virtio")
+    etree.SubElement(disk, "source", file=VOLUME_KEY)
+
+    payload = {"source": VOLUME_KEY, "target": "vda"}
+    extracted = _extract_device_xml(proposed.serialize(), "disk_attach", payload)
+    tree = etree.parse(BytesIO(extracted))
+    assert tree.getroot().find("target").get("dev") == "vda"  # type: ignore[union-attr]

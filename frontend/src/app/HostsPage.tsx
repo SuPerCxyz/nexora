@@ -24,13 +24,13 @@ export function HostsPage() {
   if (error) return <PageError error={error} retry={() => setReload((value) => value + 1)} />;
   if (!data) return <PageLoading />;
   return (
-    <Space orientation="vertical" size={20} className="nx-page-stack">
-      <Flex justify="space-between" align="center" gap={12}>
-        <Typography.Title level={2}>节点</Typography.Title>
+    <Space orientation="vertical" size={12} className="nx-page-stack">
+      <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
+        <div className="nx-page-title"><Typography.Title level={2}>节点</Typography.Title><Typography.Text type="secondary">管理已纳管的 KVM 计算节点</Typography.Text></div>
         <Button type="primary" href="/hosts/new">添加节点</Button>
       </Flex>
       {data.total === 0 ? <Card><PageEmpty description="尚未添加节点" /></Card> : <>
-        <Table className="nx-desktop-table" rowKey="id" columns={columns} dataSource={data.items} pagination={false} />
+        <Card><Table className="nx-desktop-table" rowKey="id" columns={columns} dataSource={data.items} pagination={false} /></Card>
         <div className="nx-mobile-list">{data.items.map((host) => <HostCard key={host.id} host={host} />)}</div>
         <Pagination current={page} pageSize={PAGE_SIZE} total={data.total} showSizeChanger={false} onChange={setPage} />
       </>}

@@ -4,6 +4,7 @@ from nexora.xml.cdrom import (
     CdromConfigError,
     CdromHttpChange,
     CdromMediaChange,
+    apply_cdrom_add,
     apply_cdrom_http,
     apply_cdrom_media,
 )
@@ -83,3 +84,25 @@ def test_http_iso_uses_network_source_without_embedding_a_secret() -> None:
     )
     assert "file" == cdrom.get("type")
     assert cdrom.find("source") is None
+
+
+def test_add_cdrom_creates_empty_sata_device_with_controller() -> None:
+    document = LibvirtXmlDocument.parse(DOMAIN, expected_root="domain")
+    apply_cdrom_add(document, "sata")
+    cdroms = document.root.findall("./devices/disk")
+    added = [d for d in cdroms if d.get("device") == "cdrom"]
+    assert len(added) == 2
+    target = added[1].find("target")
+    assert target is not None and target.get("bus") == "sata"
+    assert target.get("dev") not in {"sda"}
+    assert added[1].find("readonly") is not None
+    assert any(
+        controller.get("type") == "sata"
+        for controller in document.root.findall("./devices/controller")
+    )
+
+
+def test_add_cdrom_rejects_unsupported_bus() -> None:
+    document = LibvirtXmlDocument.parse(DOMAIN, expected_root="domain")
+    with pytest.raises(CdromConfigError, match="bus"):
+        apply_cdrom_add(document, "virtio")

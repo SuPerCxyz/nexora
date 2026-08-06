@@ -36,8 +36,6 @@ import { VmsPage } from "./VmsPage";
 import { VmDetailPage } from "./VmDetailPage";
 import { VmConfigurationPage } from "./VmConfigurationPage";
 import { VmCreatePage } from "./VmCreatePage";
-import { VmBlankCreatePage } from "./VmBlankCreatePage";
-import { VmMediaCreatePage } from "./VmMediaCreatePage";
 import { TaskDetailPage, TasksPage } from "./TasksPage";
 import { MediaPage } from "./MediaPage";
 import { MediaCopyPage } from "./MediaCopyPage";
@@ -111,7 +109,7 @@ export function App({ nonce }: AppProps) {
         <Layout className="nx-app-shell">
           <header className="nx-topbar">
             <button className="nx-brand-button" onClick={() => navigate("/", setPath, setDrawerOpen)}>
-              <Typography.Title level={3} className="nx-brand">Nexora</Typography.Title>
+              <Typography.Title level={2} className="nx-brand">Nexora</Typography.Title>
             </button>
             <nav className="nx-desktop-nav" aria-label="主导航">{menu}</nav>
             <Button className="nx-mobile-menu" type="text" icon={<MenuOutlined />} aria-label="打开主导航" onClick={() => setDrawerOpen(true)} />
@@ -141,8 +139,8 @@ function CurrentPage({ path }: { path: string }) {
   if (path === "/settings/account") return <AccountPage />;
   if (path === "/tasks") return <TasksPage />;
   if (path === "/vms/create") return <VmCreatePage />;
-  if (path === "/vms/create/blank-disk") return <VmBlankCreatePage />;
-  if (path === "/vms/create/platform-image") return <VmMediaCreatePage />;
+  if (path === "/vms/create/blank-disk") return <VmCreatePage initialMode="blank" />;
+  if (path === "/vms/create/platform-image") return <VmCreatePage initialMode="media" />;
   const mediaCopyMatch = path.match(/^\/media\/([^/]+)\/copy$/);
   if (mediaCopyMatch) return <MediaCopyPage mediaId={mediaCopyMatch[1]} />;
   const vmMatch = path.match(/^\/hosts\/([^/]+)\/vms\/([^/]+)$/);

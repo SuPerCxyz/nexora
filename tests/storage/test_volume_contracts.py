@@ -1,7 +1,10 @@
 import pytest
 from lxml import etree
 
-from nexora.storage.volume_contracts import StorageVolumeCreateInput
+from nexora.storage.volume_contracts import (
+    StorageVolumeCreateInput,
+    is_attachable_volume,
+)
 from nexora.storage.volume_xml import build_volume_xml
 
 
@@ -53,3 +56,31 @@ def test_volume_input_round_trip_and_xml() -> None:
 def test_invalid_volume_input_is_rejected(changes: dict[str, object]) -> None:
     with pytest.raises(ValueError):
         create_input(**changes).validate()
+
+
+@pytest.mark.parametrize(
+    ("name", "volume_format", "expected"),
+    [
+        ("system.qcow2", "qcow2", True),
+        ("data.raw", "raw", True),
+        ("boot.img", "raw", True),
+        ("backup.tar.gz", "raw", False),
+        ("notes.xml", "raw", False),
+        ("archive.zip", "qcow2", False),
+        ("DATA.QCOW2", "qcow2", True),
+        ("data.qcow", "qcow2", True),
+        ("data.qcow1", "qcow2", True),
+        ("system.qcow2", "iso", False),
+    ],
+)
+def test_is_attachable_volume_accepts_disk_images_only(
+    name: str,
+    volume_format: str,
+    expected: bool,
+) -> None:
+    assert expected == is_attachable_volume(name, volume_format)
+
+
+def test_is_attachable_volume_rejects_unsupported_format_extension() -> None:
+    assert not is_attachable_volume("system.qcow2", "iso")
+    assert not is_attachable_volume("installer.iso", "iso")

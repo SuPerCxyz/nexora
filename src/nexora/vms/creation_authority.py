@@ -15,6 +15,7 @@ from nexora.resources.libvirt_network_discovery import LibvirtNetworkDiscoverySe
 from nexora.resources.models import ResourceIndex, ResourceStatus, ResourceType
 from nexora.resources.storage_discovery import StorageDiscoveryService
 from nexora.storage.usage import StoragePoolUsageGuard
+from nexora.storage.volume_contracts import is_attachable_volume
 from nexora.vms.creation_contracts import VmCreationOptions, VmImportCreateInput
 from nexora.vms.creation_iso_authority import verify_creation_iso, verify_driver_iso
 
@@ -70,8 +71,8 @@ class VmCreationAuthority:
         disk_format = volume_details.get("format")
         if not isinstance(path, str) or not PurePosixPath(path).is_absolute():
             raise VmCreationConflict("managed volume path is not an absolute path")
-        if disk_format not in {"qcow2", "raw"}:
-            raise VmCreationConflict("managed volume format is not qcow2 or raw")
+        if not is_attachable_volume(volume.display_name, str(disk_format or "")):
+            raise VmCreationConflict("managed volume format is not a supported disk image")
         iso_path = verify_creation_iso(self.database, self.guard, create)
         driver_iso_path = verify_driver_iso(self.database, self.guard, create)
         return VerifiedImportVolume(

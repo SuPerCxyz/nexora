@@ -10,6 +10,7 @@ from nexora.hosts.models import Host
 from nexora.resources.models import ResourceIndex, ResourceStatus, ResourceType
 from nexora.storage.read_service import StorageReadService, StorageVolumeView
 from nexora.storage.usage import StoragePoolUsageGuard
+from nexora.storage.volume_contracts import is_attachable_volume
 
 
 @dataclass(frozen=True)
@@ -28,8 +29,9 @@ def eligible_volumes(database: Database) -> list[StorageVolumeView]:
         and view.pool.status == ResourceStatus.MANAGED
         and view.pool.persistent_hash is not None
         and view.volume.persistent_hash is not None
-        and view.details.get("format") in {"qcow2", "raw"}
-        and not view.volume.display_name.lower().endswith(".iso")
+        and is_attachable_volume(
+            view.volume.display_name, str(view.details.get("format") or "")
+        )
         and view.details.get("capacity_bytes", 0)
         and not usage.volume_references(
             view.host.id,

@@ -53,6 +53,7 @@ async def vm_configuration(request: Request, host_id: str, domain_uuid: str) -> 
         "interfaces": detail.details.get("interfaces", []),
         "networks": _networks(request, host_id),
         "storage_volumes": _storage_volumes(request, host_id),
+        "pools": _pools(request, host_id),
         "platform_isos": [
             {
                 "id": item.id,
@@ -71,10 +72,20 @@ async def vm_configuration(request: Request, host_id: str, domain_uuid: str) -> 
 
 
 def _storage_volumes(request: Request, host_id: str) -> list[dict[str, object]]:
+    from nexora.storage.usage import StoragePoolUsageGuard
+
+    usage = StoragePoolUsageGuard(request.app.state.database)
     values: list[dict[str, object]] = []
     for view in StorageReadService(request.app.state.database).volumes():
         if view.host.id != host_id or view.volume.status != "managed":
             continue
+        references = usage.volume_references(
+            host_id,
+            pool_name=view.pool.display_name,
+            volume_name=view.volume.display_name,
+            volume_key=str(view.details.get("key") or ""),
+            volume_path=_optional_text(view.details.get("path")),
+        )
         values.append(
             {
                 "resource_id": view.volume.id,
@@ -86,9 +97,36 @@ def _storage_volumes(request: Request, host_id: str) -> list[dict[str, object]]:
                 "format": view.details.get("format"),
                 "path": view.details.get("path"),
                 "capacity_bytes": view.details.get("capacity_bytes"),
+                "used_by": references[0].vm_name if references else None,
             }
         )
     return values
+
+
+def _pools(request: Request, host_id: str) -> list[dict[str, object]]:
+    from nexora.resources.storage_parser import WRITABLE_POOL_TYPES
+
+    values: list[dict[str, object]] = []
+    for view in StorageReadService(request.app.state.database).pools():
+        if (
+            view.host.id != host_id
+            or view.pool.status != "managed"
+            or not view.details.get("active")
+            or view.details.get("pool_type") not in WRITABLE_POOL_TYPES
+        ):
+            continue
+        values.append(
+            {
+                "resource_id": view.pool.id,
+                "name": view.pool.display_name,
+                "pool_type": view.details.get("pool_type"),
+            }
+        )
+    return values
+
+
+def _optional_text(value: object) -> str | None:
+    return value if isinstance(value, str) and value else None
 
 
 def _networks(request: Request, host_id: str) -> list[dict[str, object]]:

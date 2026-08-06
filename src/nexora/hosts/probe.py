@@ -201,7 +201,6 @@ class HostProbeService:
             host_id,
             CommandSpec("command", ("-v", tool.name)),
             timeout=10,
-            env={"LC_ALL": "C"},
         )
         if result.exit_code == 0:
             return CapabilityObservation(

@@ -32,7 +32,7 @@ def test_upgrade_database_reaches_head(settings: Settings) -> None:
     finally:
         database.dispose()
 
-    assert "20260803_0022" == revision
+    assert "20260803_0023" == revision
 
 
 def test_authentication_schema_is_created(settings: Settings) -> None:
@@ -111,7 +111,7 @@ def test_upgrade_from_p0_preserves_existing_administrator(settings: Settings) ->
         database.dispose()
 
     assert "admin" == username
-    assert "20260803_0022" == revision
+    assert "20260803_0023" == revision
 
 
 def test_resource_index_migration_preserves_managed_host(settings: Settings) -> None:
@@ -148,4 +148,4 @@ def test_resource_index_migration_preserves_managed_host(settings: Settings) -> 
         database.dispose()
 
     assert "node" == host_name
-    assert "20260803_0022" == revision
+    assert "20260803_0023" == revision

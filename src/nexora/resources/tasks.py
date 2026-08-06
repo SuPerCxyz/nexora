@@ -62,6 +62,8 @@ class FullResourceDiscoveryHandler:
             f"pools={len(storage_result.pools.resources)},"
             f"volumes={len(storage_result.volumes.resources)}"
         )
+        if storage_result.warnings:
+            summaries.append(f"storage_warnings={len(storage_result.warnings)}")
         network_result = self._step(
             context,
             4,

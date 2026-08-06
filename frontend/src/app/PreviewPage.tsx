@@ -4,8 +4,8 @@ import { StatusTag } from "./StatusTag";
 
 export function PreviewPage() {
   return (
-    <Space orientation="vertical" size={20} className="nx-page-stack">
-      <Flex justify="space-between" align="center" wrap gap={12}>
+    <Space orientation="vertical" size={12} className="nx-page-stack">
+      <Flex className="nx-detail-header" justify="space-between" align="start" wrap gap={16}>
         <div>
           <Typography.Title level={2}>Ant Design 基础平台</Typography.Title>
           <Typography.Text type="secondary">P8-001 安全预览入口</Typography.Text>

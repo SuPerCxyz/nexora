@@ -104,7 +104,12 @@ from nexora.vms.snapshot_delete_service import SnapshotDeleteService
 from nexora.vms.snapshot_revert_service import SnapshotRevertService
 from nexora.vms.snapshot_service import SnapshotService
 from nexora.vms.snapshot_tasks import SnapshotChangeHandler
-from nexora.vms.tasks import VmAdvancedChangeHandler, VmCpuChangeHandler, VmLifecycleHandler
+from nexora.vms.tasks import (
+    VmAdvancedChangeHandler,
+    VmCpuChangeHandler,
+    VmLifecycleHandler,
+    VmXmlRestoreHandler,
+)
 from nexora.web.frontend import router as frontend_router
 from nexora.web.internal.router import router as internal_router
 from nexora.web.middleware import SecurityHeadersMiddleware
@@ -523,6 +528,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         coordinator.register(
             "vm.remove",
             VmRemoveHandler(vm_remove),
+        )
+        coordinator.register(
+            "vm.xml_restore",
+            VmXmlRestoreHandler(database, remote_executor),
         )
         coordinator.register(
             "vm.clone",

@@ -28,10 +28,16 @@ export function loadHosts(page: number, pageSize: number): Promise<PaginatedResp
   );
 }
 
-export function loadVms(page: number, pageSize: number): Promise<PaginatedResponse<VmSummary>> {
-  return internalRequest<PaginatedResponse<VmSummary>>(
-    `/internal/vms?page=${page}&page_size=${pageSize}`,
-  );
+export function loadVms(
+  page: number,
+  pageSize: number,
+  state?: string,
+  hostId?: string,
+): Promise<PaginatedResponse<VmSummary>> {
+  const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (state) query.set("state", state);
+  if (hostId) query.set("host_id", hostId);
+  return internalRequest<PaginatedResponse<VmSummary>>(`/internal/vms?${query.toString()}`);
 }
 
 export function loadHostDetail(hostId: string): Promise<HostDetail> {

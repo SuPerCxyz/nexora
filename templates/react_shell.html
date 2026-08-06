@@ -8,6 +8,7 @@
     {% if auth_error %}<meta name="nexora-auth-error" content="{{ auth_error }}">{% endif %}
     {% if auth_csrf %}<meta name="nexora-auth-csrf" content="{{ auth_csrf }}">{% endif %}
     <title>Nexora</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/css/design-tokens.css" nonce="{{ csp_nonce }}">
     {% for href in assets.preloads %}
     <link rel="modulepreload" href="{{ href }}" nonce="{{ csp_nonce }}">

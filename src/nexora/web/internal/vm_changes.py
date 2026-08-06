@@ -1,6 +1,6 @@
 """JSON preview and apply endpoints for persistent VM configuration changes."""
 
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -11,10 +11,12 @@ from starlette.datastructures import FormData
 from nexora.resources.conflicts import ResourceBaseVersion, ResourceWriteConflict
 from nexora.resources.models import ResourceIndex, ResourceType
 from nexora.tasks.definitions import TaskCreate
+from nexora.tasks.models import Task
 from nexora.tasks.read_service import TaskReadService
 from nexora.vms.contracts import VmChangeTaskInput
 from nexora.vms.cpu_changes import VmChangeError
 from nexora.vms.read_service import VmDetail, VmReadService
+from nexora.vms.xml_history import VmXmlHistoryStore
 from nexora.web.internal.auth import (
     internal_error,
     no_store,
@@ -43,6 +45,10 @@ class VmChangeApplyRequest(BaseModel):
     plan_id: str = Field(min_length=1, max_length=64)
     confirmation_token: str = Field(min_length=1, max_length=128)
     change_type: str = Field(min_length=1, max_length=64)
+
+
+class VmChangeRollbackRequest(BaseModel):
+    history_id: str = Field(min_length=1, max_length=36)
 
 
 @router.post("/hosts/{host_id}/vms/{domain_uuid}/configuration/preview")
@@ -107,24 +113,168 @@ async def apply_vm_change(
         )
     except VmChangeError as exc:
         return internal_error(409, "vm_change_confirmation_failed", str(exc))
-    task_input = VmChangeTaskInput(plan.id, host_id, detail.resource.native_id, plan.change_type)
-    task = request.app.state.task_queue.enqueue(
-        TaskCreate(
-            task_type=task_type,
-            title=f"{title} · {detail.resource.display_name}",
-            idempotency_scope=f"vm:{host_id}:{detail.resource.native_id}:{scope}",
-            idempotency_key=plan.id,
+    task = _enqueue_change_task(request, detail, plan, task_type, title, scope, total_steps)
+    return _task_response(task.id, 201)
+
+
+@router.post("/hosts/{host_id}/vms/{domain_uuid}/configuration/save")
+async def save_vm_change(
+    request: Request,
+    host_id: str,
+    domain_uuid: str,
+    submitted: VmChangePreviewRequest,
+) -> JSONResponse:
+    denied = _write_error(request)
+    if denied is not None:
+        return denied
+    detail = _detail(request, host_id, domain_uuid)
+    if detail is None:
+        return internal_error(404, "vm_not_found", "虚拟机不存在")
+    active = TaskReadService(request.app.state.database).find_active_vm_write(
+        host_id, detail.resource.native_id
+    )
+    if active is not None:
+        return _task_response(active.id, 200)
+    try:
+        preview = await _preview(request, detail, submitted.operation, submitted.values)
+    except (TypeError, ValueError, ResourceWriteConflict, VmChangeError) as exc:
+        return internal_error(422, "vm_change_save_failed", str(exc))
+    _snapshot_before_save(request, detail)
+    settings = _task_settings(request, preview.plan.change_type)
+    if settings is None:
+        return internal_error(422, "vm_change_type_invalid", "不支持的配置变更类型")
+    service, task_type, title, scope, total_steps = settings
+    try:
+        plan = await run_in_threadpool(
+            service.confirm,
+            preview.plan.id,
+            preview.confirmation_token,
             host_id=host_id,
             vm_uuid=detail.resource.native_id,
-            resource_type=ResourceType.VIRTUAL_MACHINE,
-            resource_id=detail.resource.id,
-            total_steps=total_steps,
-            resumable=False,
-            recovery_strategy="verify_only",
-            input_summary=task_input.encode(),
+            change_type=preview.plan.change_type,
         )
+    except VmChangeError as exc:
+        return internal_error(409, "vm_change_confirmation_failed", str(exc))
+    task = _enqueue_change_task(request, detail, plan, task_type, title, scope, total_steps)
+    return _task_response(task.id, 201)
+
+
+@router.get("/hosts/{host_id}/vms/{domain_uuid}/configuration/history")
+async def vm_configuration_history(
+    request: Request,
+    host_id: str,
+    domain_uuid: str,
+) -> JSONResponse:
+    denied = resolve_internal_identity(request)
+    if isinstance(denied, JSONResponse):
+        return denied
+    detail = _detail(request, host_id, domain_uuid)
+    if detail is None:
+        return internal_error(404, "vm_not_found", "虚拟机不存在")
+    snapshots = VmXmlHistoryStore(request.app.state.database).list(
+        host_id, detail.resource.native_id
+    )
+    payload = {
+        "items": [
+            {
+                "id": snapshot.id,
+                "created_at": snapshot.created_at.isoformat(),
+                "xml_hash": snapshot.xml_hash,
+            }
+            for snapshot in snapshots
+        ]
+    }
+    return no_store(JSONResponse(payload))
+
+
+def _snapshot_before_save(request: Request, detail: VmDetail) -> None:
+    persistent_xml = detail.documents.get("persistent_xml")
+    if persistent_xml:
+        VmXmlHistoryStore(request.app.state.database).record(
+            detail.host.id, detail.resource.native_id, persistent_xml
+        )
+
+
+@router.post("/hosts/{host_id}/vms/{domain_uuid}/configuration/rollback")
+async def rollback_vm_change(
+    request: Request,
+    host_id: str,
+    domain_uuid: str,
+    submitted: VmChangeRollbackRequest,
+) -> JSONResponse:
+    denied = _write_error(request)
+    if denied is not None:
+        return denied
+    detail = _detail(request, host_id, domain_uuid)
+    if detail is None:
+        return internal_error(404, "vm_not_found", "虚拟机不存在")
+    store = VmXmlHistoryStore(request.app.state.database)
+    snapshot = store.get(submitted.history_id)
+    if (
+        snapshot is None
+        or snapshot.host_id != host_id
+        or snapshot.vm_uuid != detail.resource.native_id
+    ):
+        return internal_error(404, "vm_history_not_found", "配置历史快照不存在")
+    active = TaskReadService(request.app.state.database).find_active_vm_write(
+        host_id, detail.resource.native_id
+    )
+    if active is not None:
+        return _task_response(active.id, 200)
+    _snapshot_before_save(request, detail)
+    task = cast(
+        Task,
+        request.app.state.task_queue.enqueue(
+            TaskCreate(
+                task_type="vm.xml_restore",
+                title=f"回滚配置 · {detail.resource.display_name}",
+                idempotency_scope=f"vm:{host_id}:{detail.resource.native_id}:xml-restore",
+                idempotency_key=submitted.history_id,
+                host_id=host_id,
+                vm_uuid=detail.resource.native_id,
+                resource_type=ResourceType.VIRTUAL_MACHINE,
+                resource_id=detail.resource.id,
+                total_steps=3,
+                resumable=False,
+                recovery_strategy="verify_only",
+                input_summary=submitted.history_id,
+            )
+        ),
     )
     return _task_response(task.id, 201)
+
+
+def _enqueue_change_task(
+    request: Request,
+    detail: VmDetail,
+    plan: Any,
+    task_type: str,
+    title: str,
+    scope: str,
+    total_steps: int,
+) -> Task:
+    task_input = VmChangeTaskInput(
+        plan.id, detail.host.id, detail.resource.native_id, plan.change_type
+    )
+    return cast(
+        Task,
+        request.app.state.task_queue.enqueue(
+            TaskCreate(
+                task_type=task_type,
+                title=f"{title} · {detail.resource.display_name}",
+                idempotency_scope=f"vm:{detail.host.id}:{detail.resource.native_id}:{scope}",
+                idempotency_key=plan.id,
+                host_id=detail.host.id,
+                vm_uuid=detail.resource.native_id,
+                resource_type=ResourceType.VIRTUAL_MACHINE,
+                resource_id=detail.resource.id,
+                total_steps=total_steps,
+                resumable=False,
+                recovery_strategy="verify_only",
+                input_summary=task_input.encode(),
+            )
+        ),
+    )
 
 
 async def _preview(
@@ -215,6 +365,12 @@ async def _preview_device_change(
             new_mac=_optional(values, "new_mac"),
             live=bool(values.get("live")),
         )
+    if operation == "cdrom_add":
+        return await run_in_threadpool(
+            state.vm_cdrom_change_service.preview_add,
+            base,
+            bus=str(values.get("bus", "sata")),
+        )
     if operation == "cdrom_mount":
         volume = _resource_base(request, detail.host.id, values, "volume")
         return await run_in_threadpool(
@@ -224,6 +380,7 @@ async def _preview_device_change(
             target=str(values.get("target", "")),
             bus=str(values.get("bus", "")),
             expected_source=_optional(values, "expected_source"),
+            live=bool(values.get("live")),
         )
     if operation == "cdrom_eject":
         return await run_in_threadpool(
@@ -232,6 +389,7 @@ async def _preview_device_change(
             target=str(values.get("target", "")),
             bus=str(values.get("bus", "")),
             expected_source=str(values.get("expected_source", "")),
+            live=bool(values.get("live")),
         )
     if operation == "advanced_devices":
         return await run_in_threadpool(
@@ -374,6 +532,13 @@ def _task_settings(request: Request, change_type: str) -> tuple[Any, str, str, s
             3,
         ),
         "cdrom_eject": (state.vm_cdrom_change_service, "vm.cdrom_change", "弹出 ISO", "cdrom", 3),
+        "cdrom_add": (
+            state.vm_cdrom_change_service,
+            "vm.cdrom_change",
+            "添加光驱设备",
+            "cdrom",
+            3,
+        ),
         "cdrom_platform_mount": (
             state.vm_platform_iso_service,
             "vm.platform_iso_change",

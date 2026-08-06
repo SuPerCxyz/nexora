@@ -35,12 +35,13 @@ export function VmDetailPage({ hostId, vmId }: { hostId: string; vmId: string })
   if (!data) return <PageLoading />;
   const passthroughNics = data.host_devices.filter((item) => item.category === "网卡").length;
   return (
-    <Space orientation="vertical" size={20} className="nx-page-stack">
-      <Flex className="nx-detail-header" justify="space-between" align="center" gap={16} wrap>
+    <Space orientation="vertical" size={12} className="nx-page-stack">
+      <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
         <div>
           <Flex align="center" gap={12} wrap>
             <Typography.Title level={2}>{data.vm.name}</Typography.Title>
             <VmStatusTag state={data.vm.state} />
+            {data.vm.needs_restart && <StatusTag label="待重启" tone="warning" description="配置已修改，重启虚拟机后生效" />}
           </Flex>
           <Typography.Text type="secondary">{data.vm.host_name} · {data.vm.native_id}</Typography.Text>
         </div>
@@ -103,7 +104,7 @@ function detailTabs(data: VmDetail, guestAgent: GuestAgentSummary | null, hostId
     {
       key: "devices",
       label: "设备",
-      children: <Space orientation="vertical" size={16} className="nx-page-stack">
+      children: <Space orientation="vertical" size={12} className="nx-page-stack">
         <GuestAgentCard data={guestAgent} />
         <Card title="磁盘与光驱"><Table className="nx-responsive-table" rowKey={(item) => `${item.target}-${item.source}`} columns={diskColumns} dataSource={data.disks} pagination={false} tableLayout="fixed" /></Card>
         <Card title="网络接口"><Table className="nx-responsive-table" rowKey={(item) => item.mac ?? item.target ?? "interface"} columns={interfaceColumns} dataSource={data.interfaces} pagination={false} tableLayout="fixed" /></Card>

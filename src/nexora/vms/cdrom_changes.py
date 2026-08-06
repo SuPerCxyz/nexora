@@ -6,21 +6,28 @@ from dataclasses import asdict
 from sqlalchemy import select
 
 from nexora.db import Database
-from nexora.remote.executor import RemoteExecutor
+from nexora.remote.commands import CommandSpec
+from nexora.remote.executor import CommandResult, RemoteExecutor
 from nexora.resources.conflicts import ResourceBaseVersion, ResourceWriteGuard
 from nexora.resources.domain_discovery import DomainDiscoveryService
 from nexora.resources.index_store import ResourceIndexStore
 from nexora.resources.models import ResourceIndex, ResourceStatus, ResourceType
 from nexora.resources.storage_discovery import StorageDiscoveryService
 from nexora.tasks.locks import ResourceLockStore
-from nexora.vms.change_models import VmChangePlanStatus
+from nexora.vms.change_models import VmChangePlan, VmChangePlanStatus
 from nexora.vms.cpu_changes import (
     ChangeProgress,
     VmChangeConflict,
     VmChangePreview,
     VmCpuChangeService,
+    _uses_sudo,
 )
-from nexora.xml import CdromMediaChange, LibvirtXmlDocument, apply_cdrom_media
+from nexora.xml import (
+    CdromMediaChange,
+    LibvirtXmlDocument,
+    apply_cdrom_add,
+    apply_cdrom_media,
+)
 
 
 class VmCdromChangeService(VmCpuChangeService):
@@ -36,6 +43,26 @@ class VmCdromChangeService(VmCpuChangeService):
     ) -> None:
         super().__init__(database, executor, discovery, store, guard, locks)
         self.storage_discovery = storage_discovery
+        self._cached_plan: VmChangePlan | None = None
+
+    def preview_add(
+        self,
+        vm_base: ResourceBaseVersion,
+        *,
+        bus: str,
+    ) -> VmChangePreview:
+        current, original_xml, original_hash = self._current_persistent(vm_base)
+        proposed = LibvirtXmlDocument.parse(original_xml, expected_root="domain")
+        apply_cdrom_add(proposed, bus)
+        return self._create_preview(
+            vm_base,
+            "cdrom_add",
+            {"bus": bus},
+            current,
+            proposed,
+            original_xml,
+            original_hash,
+        )
 
     def preview_mount(
         self,
@@ -45,6 +72,7 @@ class VmCdromChangeService(VmCpuChangeService):
         target: str,
         bus: str,
         expected_source: str | None,
+        live: bool = False,
     ) -> VmChangePreview:
         self.discovery.run(vm_base.host_id)
         self.storage_discovery.run(vm_base.host_id)
@@ -59,6 +87,7 @@ class VmCdromChangeService(VmCpuChangeService):
             "volume_native_id": volume.native_id,
             "volume_generation": volume.observed_generation,
             "volume_hash": volume.persistent_hash,
+            "live": live,
         }
         return self._create_preview(
             vm_base,
@@ -77,6 +106,7 @@ class VmCdromChangeService(VmCpuChangeService):
         target: str,
         bus: str,
         expected_source: str,
+        live: bool = False,
     ) -> VmChangePreview:
         current, original_xml, original_hash = self._current_persistent(vm_base)
         change = CdromMediaChange(target, bus, expected_source, None)
@@ -85,7 +115,7 @@ class VmCdromChangeService(VmCpuChangeService):
         return self._create_preview(
             vm_base,
             "cdrom_eject",
-            asdict(change),
+            {**asdict(change), "live": live},
             current,
             proposed,
             original_xml,
@@ -101,6 +131,7 @@ class VmCdromChangeService(VmCpuChangeService):
         progress: ChangeProgress | None = None,
     ) -> str:
         plan = self.plan_store.load(plan_id, VmChangePlanStatus.CONFIRMED)
+        self._cached_plan = plan
         if plan.change_type != "cdrom_mount":
             return super().execute(
                 plan_id,
@@ -141,6 +172,69 @@ class VmCdromChangeService(VmCpuChangeService):
                 volume_base.native_id,
                 task_id,
             )
+
+    def _define(self, host_id: str, content: bytes) -> CommandResult:
+        payload = _change_input(self._current_plan.change_input_json)
+        if not bool(payload.get("live", False)):
+            return super()._define(host_id, content)
+        return self._apply_live_media(host_id, payload)
+
+    def _apply_live_media(
+        self,
+        host_id: str,
+        payload: dict[str, object],
+    ) -> CommandResult:
+        host = self._host(host_id)
+        change_type = self._current_plan.change_type
+        target = str(payload.get("target", ""))
+        new_source = payload.get("new_source")
+        args: tuple[str, ...]
+        if change_type == "cdrom_eject":
+            args = (
+                "-c",
+                host.libvirt_uri,
+                "change-media",
+                self._current_plan.vm_uuid,
+                target,
+                "--eject",
+                "--live",
+                "--persistent",
+            )
+            stdin: bytes = b""
+        else:
+            if not isinstance(new_source, str) or not new_source.startswith("/"):
+                raise VmChangeConflict("live CD-ROM mount requires a local source path")
+            args = (
+                "-c",
+                host.libvirt_uri,
+                "change-media",
+                self._current_plan.vm_uuid,
+                target,
+                new_source,
+                "--insert",
+                "--live",
+                "--persistent",
+            )
+            stdin = b""
+        return self.executor.run(
+            host_id,
+            CommandSpec("virsh", args),
+            sudo=_uses_sudo(host),
+            timeout=60,
+            stdin=stdin,
+            env={"LC_ALL": "C"},
+            sensitive=True,
+        )
+
+    @property
+    def _current_plan(self) -> VmChangePlan:
+        if self._cached_plan is None:
+            raise VmChangeConflict("no active CD-ROM change plan")
+        return self._cached_plan
+
+    @_current_plan.setter
+    def _current_plan(self, value: VmChangePlan) -> None:
+        self._cached_plan = value
 
     def _verified_iso(
         self,
@@ -206,3 +300,13 @@ def _volume_base(value: str, host_id: str) -> ResourceBaseVersion:
         persistent_hash,
         None,
     )
+
+
+def _change_input(value: str) -> dict[str, object]:
+    try:
+        payload = json.loads(value)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise VmChangeConflict("CD-ROM change input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise VmChangeConflict("CD-ROM change input is invalid")
+    return payload
