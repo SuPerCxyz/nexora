@@ -12,7 +12,6 @@ from nexora.auth.service import (
     AlreadyInitializedError,
     AuthService,
     InvalidUsernameError,
-    LoginRateLimitedError,
 )
 from nexora.auth.sessions import SessionService
 from nexora.config import Settings
@@ -115,19 +114,11 @@ async def login_submit(request: Request) -> Response:
     form = await request.form()
     if not csrf_matches(request.cookies.get(PREAUTH_CSRF_COOKIE), _field(form, "csrf_token")):
         return _auth_page(request, mode="login", error="请求已失效，请重试", status_code=403)
-    try:
-        authenticated = auth_service.authenticate(
-            _field(form, "username"),
-            _field(form, "password"),
-            remote_address(request),
-        )
-    except LoginRateLimitedError:
-        return _auth_page(
-            request,
-            mode="login",
-            error="登录尝试过多，请稍后重试",
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        )
+    authenticated = auth_service.authenticate(
+        _field(form, "username"),
+        _field(form, "password"),
+        remote_address(request),
+    )
     if not authenticated:
         return _auth_page(
             request,

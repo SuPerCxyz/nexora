@@ -8,7 +8,6 @@ from nexora.auth.service import (
     AlreadyInitializedError,
     AuthenticationFailedError,
     AuthService,
-    LoginRateLimitedError,
 )
 from nexora.config import Settings
 from nexora.db import Database
@@ -50,15 +49,6 @@ def test_authenticate_records_success_and_failure(auth_service: AuthService) -> 
 
     assert 2 == count
     assert "a-valid-password" != password_hash
-
-
-def test_repeated_failures_are_rate_limited(auth_service: AuthService) -> None:
-    auth_service.initialize("admin", "a-valid-password", "a-valid-password")
-    for _attempt in range(5):
-        assert auth_service.authenticate("admin", "wrong-password", "192.0.2.1") is False
-
-    with pytest.raises(LoginRateLimitedError):
-        auth_service.authenticate("admin", "a-valid-password", "192.0.2.1")
 
 
 def test_update_account_changes_credentials_and_version(auth_service: AuthService) -> None:

@@ -32,7 +32,6 @@
 ## Web 安全
 
 - 所有状态变更包含 CSRF；初始化和登录同样受保护。
-- 登录失败按来源和账号限速，避免泄露账号存在性。
 - 登录成功和权限变化后轮换 Session ID；改密后撤销旧 Session。
 - 响应使用 CSP、`frame-ancestors`、nosniff 和 Referrer-Policy。
 - 校验 Host Header；生产明确受信代理和 HTTPS 终止边界。

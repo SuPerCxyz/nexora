@@ -1,9 +1,9 @@
 """Administrator initialization and authentication service."""
 
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import select
 
 from nexora.auth.models import Administrator, LoginAttempt
 from nexora.auth.passwords import (
@@ -14,8 +14,6 @@ from nexora.auth.passwords import (
 from nexora.db import Database
 
 ADMINISTRATOR_ID = 1
-LOGIN_WINDOW = timedelta(minutes=5)
-MAXIMUM_FAILURES = 5
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{3,64}$")
 ALLOWED_DENSITIES = {"comfortable", "compact"}
 ALLOWED_LANGUAGES = {"zh-CN", "en"}
@@ -27,10 +25,6 @@ class AlreadyInitializedError(RuntimeError):
 
 class InvalidUsernameError(ValueError):
     """Raised when a username cannot be stored safely."""
-
-
-class LoginRateLimitedError(RuntimeError):
-    """Raised after repeated failed login attempts."""
 
 
 class AuthenticationFailedError(RuntimeError):
@@ -80,9 +74,6 @@ class AuthService:
 
         normalized = username.strip()
         now = datetime.now(UTC)
-        if self._failure_count(normalized, remote_address, now) >= MAXIMUM_FAILURES:
-            raise LoginRateLimitedError
-
         with self.database.session() as session:
             administrator = session.get(Administrator, ADMINISTRATOR_ID)
             stored_hash = None
@@ -154,20 +145,6 @@ class AuthService:
         statement = select(LoginAttempt).order_by(LoginAttempt.occurred_at.desc()).limit(limit)
         with self.database.session() as session:
             return list(session.scalars(statement))
-
-    def _failure_count(self, username: str, address: str, now: datetime) -> int:
-        cutoff = now - LOGIN_WINDOW
-        statement = select(func.count(LoginAttempt.id)).where(
-            LoginAttempt.succeeded.is_(False),
-            LoginAttempt.occurred_at >= cutoff,
-            or_(
-                LoginAttempt.username == username,
-                LoginAttempt.remote_address == address,
-            ),
-        )
-        with self.database.session() as session:
-            return session.execute(statement).scalar_one()
-
 
 def normalize_username(username: str) -> str:
     """Normalize and validate an administrator username."""
