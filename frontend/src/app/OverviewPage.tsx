@@ -25,7 +25,7 @@ export function OverviewPage() {
   return (
     <Space orientation="vertical" size={12} className="nx-page-stack">
       <Flex className="nx-detail-header" justify="space-between" align="start" wrap gap={16}>
-        <Typography.Title level={2}>总览</Typography.Title>
+        <div className="nx-page-title"><Typography.Title level={2}>总览</Typography.Title></div>
         <StatusTag
           label={attention ? `${summary.failed_tasks} 项需关注` : healthy ? "运行正常" : "等待节点状态"}
           tone={attention ? "error" : healthy ? "running" : "unknown"}

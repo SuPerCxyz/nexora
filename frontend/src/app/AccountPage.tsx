@@ -35,7 +35,7 @@ export function AccountPage() {
   }
   return <Space orientation="vertical" size={12} className="nx-page-stack">
     <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap><div className="nx-page-title"><Typography.Title level={2}>管理员账户</Typography.Title><Typography.Text type="secondary">更新身份、安全设置和界面偏好</Typography.Text></div></Flex>
-    <Alert type="info" showIcon={false} message="保存账户后会撤销其他 Session，并为当前浏览器签发新 Session。" />
+    <Alert type="info" showIcon={false} title="保存账户后会撤销其他 Session，并为当前浏览器签发新 Session。" />
     <Card title="账户与偏好">
       <Form form={form} layout="vertical" requiredMark={false} className="nx-form-narrow">
         <Form.Item name="username" label="用户名" rules={[{ required: true }, { pattern: /^[A-Za-z0-9_.-]{3,64}$/, message: "请输入 3-64 位合法用户名" }]}><Input autoComplete="username" /></Form.Item>
@@ -47,10 +47,10 @@ export function AccountPage() {
           <Form.Item name="timezone" label="时区" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="language" label="语言"><Select options={[{ value: "zh-CN", label: "简体中文" }, { value: "en", label: "English" }]} /></Form.Item>
         </div>
-        <Space><Button className="nx-btn-primary" loading={saving} onClick={save}>保存账户</Button><Button className="nx-btn-danger" onClick={signOut}>退出登录</Button></Space>
+        <Space><Button type="primary" loading={saving} onClick={save}>保存账户</Button><Button className="nx-btn-danger" onClick={signOut}>退出登录</Button></Space>
       </Form>
     </Card>
-    <Card title="登录历史"><Table rowKey={(item) => `${item.occurred_at}-${item.remote_address}`} columns={historyColumns} dataSource={data.login_history} pagination={false} /></Card>
+    <Card title="登录历史"><Table className="nx-responsive-table" rowKey={(item) => `${item.occurred_at}-${item.remote_address}`} columns={historyColumns} dataSource={data.login_history} pagination={false} tableLayout="fixed" /></Card>
   </Space>;
 }
 

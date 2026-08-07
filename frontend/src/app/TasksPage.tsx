@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { HostSummary, TaskDetail, TaskStepSummary, TaskSummary } from "../api/contracts";
 import { loadHosts } from "../api/core";
 import { cancelTask, loadTask, loadTasks, recoverTask } from "../api/tasks";
+import { FactCard } from "./FactCard";
 import { formatDateTime } from "./dateTime";
 import { PageEmpty, PageError, PageLoading } from "./PageState";
 import { StatusTag } from "./StatusTag";
@@ -22,13 +23,24 @@ const statusOptions = [
 ];
 
 export function TasksPage() {
+  const initial = new URLSearchParams(window.location.search);
   const [items, setItems] = useState<TaskSummary[] | null>(null);
   const [hosts, setHosts] = useState<HostSummary[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>();
-  const [hostFilter, setHostFilter] = useState<string>();
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(initial.get("status") || undefined);
+  const [hostFilter, setHostFilter] = useState<string | undefined>(initial.get("host_id") || undefined);
   const [error, setError] = useState<Error | null>(null);
   useEffect(() => { loadTasks().then((payload) => setItems(payload.items)).catch(setError); }, []);
   useEffect(() => { loadHosts(1, 100).then((payload) => setHosts(payload.items)).catch(() => {}); }, []);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (statusFilter) params.set("status", statusFilter);
+    if (hostFilter) params.set("host_id", hostFilter);
+    const query = params.toString();
+    const newPath = query ? `/tasks?${query}` : "/tasks";
+    if (window.location.pathname + window.location.search !== newPath) {
+      window.history.replaceState({}, "", newPath);
+    }
+  }, [statusFilter, hostFilter]);
   if (error) return <PageError error={error} />;
   if (!items) return <PageLoading />;
   const filtered = items.filter((task) =>
@@ -52,16 +64,40 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   const [submitting, setSubmitting] = useState(false);
   useEffect(() => {
     let active = true;
-    const refresh = () => loadTask(taskId).then((value) => active && setData(value)).catch(setError);
+    let aborted = false;
+    const abortController = new AbortController();
+    const refresh = async () => {
+      try {
+        const value = await loadTask(taskId, abortController.signal);
+        if (active) setData(value);
+      } catch (caught) {
+        if (aborted) return;
+        if (active && caught instanceof Error) {
+          setError(caught);
+        }
+      }
+    };
     refresh();
     const timer = window.setInterval(refresh, 3000);
-    return () => { active = false; window.clearInterval(timer); };
+    return () => {
+      active = false;
+      aborted = true;
+      abortController.abort();
+      window.clearInterval(timer);
+    };
   }, [taskId]);
-  if (error) return <PageError error={error} />;
+  function retry() {
+    setError(null);
+    setData(null);
+    window.location.reload();
+  }
+  if (error) return <PageError error={error} retry={retry} />;
   if (!data) return <PageLoading />;
   const task = data.task;
   const cancellable = ["pending", "queued", "running", "waiting_confirmation"].includes(task.status);
   const recoverable = task.status === "interrupted" && task.resumable && task.retry_count < task.max_retries;
+  const terminal = ["succeeded", "failed", "cancelled", "timed_out"].includes(task.status);
+  const returnTo = sessionStorage.getItem("nexora-return-to");
   async function submit(action: "cancel" | "recover") {
     setSubmitting(true);
     try {
@@ -70,20 +106,24 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     } catch (caught) { setError(caught instanceof Error ? caught : new Error("任务操作失败")); }
     finally { setSubmitting(false); }
   }
+  function goBack() {
+    if (returnTo) sessionStorage.removeItem("nexora-return-to");
+    window.location.assign(returnTo || "/tasks");
+  }
   return <Space orientation="vertical" size={12} className="nx-page-stack">
     <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
       <div><Typography.Title level={2}>{task.title}</Typography.Title><span className="nx-technical">{task.id}</span></div>
-      <Space>{cancellable && <Button className="nx-btn-danger" loading={submitting} onClick={() => submit("cancel")}>请求取消</Button>}{recoverable && <Button className="nx-btn-primary" loading={submitting} onClick={() => submit("recover")}>验证并重试</Button>}</Space>
+      <Space>
+        {terminal && returnTo && <Button type="primary" onClick={goBack}>返回源页面</Button>}
+        {cancellable && <Button className="nx-btn-danger" loading={submitting} onClick={() => submit("cancel")}>请求取消</Button>}
+        {recoverable && <Button type="primary" loading={submitting} onClick={() => submit("recover")}>验证并重试</Button>}
+      </Space>
     </Flex>
-    {task.status === "interrupted" && <Alert type="warning" showIcon={false} message="任务因进程中断而停止，不会自动重放远端写操作。" />}
-    {task.error_message && <Alert type="error" showIcon={false} message={task.error_message} />}
-    <div className="nx-fact-grid"><TaskFact label="状态" value={<TaskStatus value={task.status} />} /><TaskFact label="进度" value={<Progress percent={Math.round(task.progress)} size="small" />} /><TaskFact label="步骤" value={<strong>{task.current_step} / {task.total_steps}</strong>} /></div>
+    {task.status === "interrupted" && <Alert type="warning" showIcon={false} title="任务因进程中断而停止，不会自动重放远端写操作。" />}
+    {task.error_message && <Alert type="error" showIcon={false} title={task.error_message} />}
+    <div className="nx-metric-grid"><FactCard label="状态" value={<TaskStatus value={task.status} />} /><FactCard label="进度" value={<Progress percent={Math.round(task.progress)} size="small" />} /><FactCard label="步骤" value={<strong>{task.current_step} / {task.total_steps}</strong>} /></div>
     <Card title="执行步骤"><Table className="nx-responsive-table" rowKey="sequence" columns={stepColumns} dataSource={data.steps} pagination={false} locale={{ emptyText: <PageEmpty description="任务尚未开始执行步骤" /> }} tableLayout="fixed" /></Card>
   </Space>;
-}
-
-function TaskFact({ label, value }: { label: string; value: React.ReactNode }) {
-  return <Card size="small" className="nx-fact-card"><span>{label}</span>{value}</Card>;
 }
 
 function TaskStatus({ value }: { value: string }) {

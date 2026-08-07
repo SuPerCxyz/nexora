@@ -2,6 +2,7 @@ import { Button, Card, Dropdown, Flex, InputNumber, Modal, Space, Table, Typogra
 import type { ColumnsType } from "antd/es/table";
 
 import type { StoragePoolSummary, StorageVolumeSummary } from "../api/contracts";
+import { formatBytes } from "./format";
 import { StatusTag } from "./StatusTag";
 
 export function StorageTables({
@@ -23,25 +24,25 @@ export function StorageTables({
     { title: "类型", dataIndex: "pool_type", render: (value) => <code>{value}</code> },
     { title: "状态", render: (_, pool) => <PoolState pool={pool} /> },
     { title: "Target", dataIndex: "target_path", render: (value) => <code>{value ?? "—"}</code> },
-    { title: "可用容量", dataIndex: "available_bytes", render: formatBytes },
+    { title: "可用容量", dataIndex: "available_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
     { title: "操作", width: 100, render: (_, pool) => pool.writable ? <PoolActions pool={pool} loading={loading} onLifecycle={onLifecycle} onDelete={() => onMutation(pool.resource_id, "pool_delete")} /> : <Typography.Text type="secondary">只读</Typography.Text> },
   ];
   const volumeColumns: ColumnsType<StorageVolumeSummary> = [
     { title: "存储卷", render: (_, volume) => <ResourceIdentity name={volume.name} identity={volume.resource_id} /> },
     { title: "节点 / Pool", render: (_, volume) => `${volume.host_name} / ${volume.pool_name}` },
     { title: "格式", dataIndex: "format", render: (value) => <code>{value ?? "—"}</code> },
-    { title: "容量", dataIndex: "capacity_bytes", render: formatBytes },
-    { title: "分配", dataIndex: "allocation_bytes", render: formatBytes },
+    { title: "容量", dataIndex: "capacity_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
+    { title: "分配", dataIndex: "allocation_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
     { title: "状态", render: (_, volume) => <StatusTag label={volume.writable ? "已纳管" : "只读"} tone={volume.writable ? "running" : "unknown"} /> },
     { title: "操作", width: 100, render: (_, volume) => volume.writable ? <VolumeActions volume={volume} loading={loading} onMutation={onMutation} /> : <Typography.Text type="secondary">只读</Typography.Text> },
   ];
   return (
     <Space className="nx-page-stack" orientation="vertical" size={12}>
       <Card title="已发现的存储池">
-        <Table rowKey="resource_id" columns={poolColumns} dataSource={pools} pagination={{ pageSize: 20 }} scroll={{ x: 900 }} />
+        <Table className="nx-responsive-table" rowKey="resource_id" columns={poolColumns} dataSource={pools} pagination={{ pageSize: 20 }} scroll={{ x: 900 }} tableLayout="fixed" />
       </Card>
       <Card title="已发现的存储卷">
-        <Table rowKey="resource_id" columns={volumeColumns} dataSource={volumes} pagination={{ pageSize: 20 }} scroll={{ x: 800 }} />
+        <Table className="nx-responsive-table" rowKey="resource_id" columns={volumeColumns} dataSource={volumes} pagination={{ pageSize: 20 }} scroll={{ x: 800 }} tableLayout="fixed" />
       </Card>
     </Space>
   );
@@ -86,9 +87,4 @@ function PoolState({ pool }: { pool: StoragePoolSummary }) {
 
 function ResourceIdentity({ name, identity }: { name: string; identity: string }) {
   return <div><strong>{name}</strong><small className="nx-technical">{identity}</small></div>;
-}
-
-function formatBytes(value: number | null): string {
-  if (value === null || value === undefined) return "—";
-  return `${(value / 1024 / 1024 / 1024).toLocaleString("zh-CN", { maximumFractionDigits: 1 })} GiB`;
 }

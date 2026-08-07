@@ -78,6 +78,8 @@
 | NEW-7 | 等待重启标记 `needs_restart` | DONE | P9-008 | 2026-08-05；任务时序推断，列表/节点/详情展示"待重启" |
 | NEW-8 | favicon 与布局对齐 | DONE | P8-015 | 2026-08-05；`/static/favicon.svg`、`nx-detail-header` 统一 |
 | NEW-9 | 网络拓扑透传网卡展示 + 节点颜色区分 | DONE | NEW-3 | 2026-08-06；hostdev PCI→pci_device 地址匹配生成 vm_nic 节点并关联 VM，`vm_nic`/`virtual_machine` 分色；kvm3 OpenWrt 2 个 I211 透传验证 |
+| NEW-10 | 前端视觉一致性与联动逻辑审计整改 | DONE | NEW-2 | 2026-08-07；Alert title/主按钮/表格响应式/共享组件/标题包裹/筛选 URL 持久化/任务返回/轮询健壮性/弹窗宽度，部署 `nexora:noratelimit-20260807T154034Z` |
+| NEW-11 | 移除登录限流 | DONE | NEW-10 | 2026-08-07；移除失败次数锁定与 429 分支，保留登录审计记录；SECURITY.md 同步 |
 
 P7 暂不包含 aarch64、Rocky 之外的 RHEL 系发行版、在线迁移、任意历史分支恢复、
 复杂 external/raw/block/network Snapshot 链及 Bond/OVS/VXLAN 写入。

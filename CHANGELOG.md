@@ -6,6 +6,18 @@
 
 ### Fixed
 
+- 移除登录限流：删除失败次数锁定（`MAXIMUM_FAILURES`/`LOGIN_WINDOW`/
+  `LoginRateLimitedError`/`_failure_count`）与登录 429 分支，连续输错密码不再被
+  临时锁定；登录历史审计记录（`LoginAttempt`）继续保留。
+- 前端 Alert 属性统一为 antd v6 标准的 `title`（`message` 已弃用），`showIcon`
+  全部显式声明；主按钮统一使用 `type="primary"`；14 处表格补齐
+  `nx-responsive-table` 响应式适配。
+- 前端视觉一致性：提取共享 `FactCard`/`formatBytes` 组件消除 5 处重复定义，
+  统一 `.nx-metric-grid`，8 处页面标题补齐 `.nx-page-title` 包裹，预览确认类
+  弹窗统一宽度。
+- 联动逻辑：列表筛选状态持久化到 URL query（虚拟机/审计/任务/网络），任务完成
+  后支持"返回源页面"（sessionStorage 记录来源），任务详情轮询改为 AbortController
+  并在请求失败后停止、支持重试。
 - 网络拓扑修复节点颜色混淆并支持透传网卡展示：`vm_nic` 与 `virtual_machine` 之前
   同色难以区分，现分别使用品牌蓝与深灰；新增 `tap`/`veth` 独立浅色。同时将
   虚拟机透传的 PCI 网卡（`hostdev type=pci`）纳入拓扑：按 PCI 地址匹配节点资源，

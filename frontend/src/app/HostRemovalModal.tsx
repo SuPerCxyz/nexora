@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import type { HostRemovalPreview } from "../api/hostRemoval";
 import { applyHostRemoval, previewHostRemoval } from "../api/hostRemoval";
+import { navigateToTask } from "./navigateToTask";
 
 export function HostRemovalModal({ hostId, hostName, open, onClose }: { hostId: string; hostName: string; open: boolean; onClose: () => void }) {
   const [mode, setMode] = useState("local_only");
@@ -20,12 +21,12 @@ export function HostRemovalModal({ hostId, hostName, open, onClose }: { hostId: 
   async function apply() {
     if (!preview) return;
     setLoading(true);
-    try { window.location.assign((await applyHostRemoval(preview, confirmationName)).location); }
+    try { navigateToTask((await applyHostRemoval(preview, confirmationName)).location); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "节点移除提交失败"); setLoading(false); }
   }
-  return <Modal title={`移除节点 ${hostName}`} open={open} onCancel={onClose} footer={null} destroyOnHidden>
+  return <Modal title={`移除节点 ${hostName}`} open={open} onCancel={onClose} footer={null} width={720} destroyOnHidden>
     <Space orientation="vertical" size={12} className="nx-page-stack">
-      <Alert type="warning" showIcon={false} message="只移除 Nexora 管理关系，不删除虚拟机、磁盘、Pool、网络、Bridge、VLAN、IP 或路由。" />
+      <Alert type="warning" showIcon={false} title="只移除 Nexora 管理关系，不删除虚拟机、磁盘、Pool、网络、Bridge、VLAN、IP 或路由。" />
       {!preview ? <>
         <Radio.Group value={mode} onChange={(event) => setMode(event.target.value)} className="nx-removal-options">
           <Radio value="local_only"><strong>仅从 Nexora 移除</strong><span>不连接或修改远端节点</span></Radio>
@@ -36,13 +37,13 @@ export function HostRemovalModal({ hostId, hostName, open, onClose }: { hostId: 
         <div><strong>模式</strong><span className="nx-technical">{preview.mode}</span></div>
         <Inventory label="临时路径" values={preview.paths} />
         <Inventory label="Transient units" values={preview.units} />
-        {preview.warnings.map((warning) => <Alert key={warning} type="warning" showIcon={false} message={warning} />)}
-        <Alert type="error" showIcon={false} message="确认后将删除本地凭据、Host Key 和资源缓存，远端业务资源始终保留。" />
+        {preview.warnings.map((warning) => <Alert key={warning} type="warning" showIcon={false} title={warning} />)}
+        <Alert type="error" showIcon={false} title="确认后将删除本地凭据、Host Key 和资源缓存，远端业务资源始终保留。" />
         <label htmlFor="host-removal-confirmation">输入节点名称 {hostName} 以确认</label>
         <Input id="host-removal-confirmation" value={confirmationName} onChange={(event) => setConfirmationName(event.target.value)} autoComplete="off" />
         <Space><Button onClick={() => setPreview(null)}>返回修改</Button><Button className="nx-btn-danger" disabled={confirmationName !== hostName} loading={loading} onClick={apply}>确认移除节点</Button></Space>
       </>}
-      {error && <Alert type="error" showIcon={false} message={error} />}
+      {error && <Alert type="error" showIcon={false} title={error} />}
     </Space>
   </Modal>;
 }

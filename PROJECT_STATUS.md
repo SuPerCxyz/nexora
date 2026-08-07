@@ -11,8 +11,9 @@ P9：React 零旧前端与 VM 操作闭环。
 
 ## Current Task
 
-2026-08-06 更新：P9 阶段（P9-001~P9-010）全部完成并部署生产。P9-001 至
-P9-006 核心清理于 2026-08-05 部署（镜像 `sha256:47f531f429e7`，含空白磁盘、
+2026-08-07 更新：完成前端视觉一致性与联动逻辑审计整改并重新部署生产；移除
+登录限流（详见下方记录）。P9 阶段（P9-001~P9-010）此前已全部完成并部署生产。
+P9-001 至 P9-006 核心清理于 2026-08-05 部署（镜像 `sha256:47f531f429e7`，含空白磁盘、
 关机迁移、删除重命名、网卡配置、旧模板清理），随后 P9-007 操作区增强、
 P9-008 配置直接保存+XML 历史+待重启、P9-009 创建页三源合并、P9-010 操作闭环
 修复（审查 #1-#12）相继完成并部署。迁移链 head 现为 `20260803_0023`
@@ -431,6 +432,9 @@ worker/Tunnel/Session 零残留。PyPI websockify 因传递 Redis 依赖被拒�
 
 ## Tests Run
 
+- 2026-08-07 移除登录限流：`uv run pytest tests/auth/ tests/web/test_auth_flow.py tests/web/test_frontend_security.py tests/web/test_internal_session_api.py tests/web/test_navigation.py`：PASS，24 tests；Ruff 通过。
+- 2026-08-07 前端审计整改：`npm run typecheck` PASS；`npm test` PASS，21 tests；`npm run build` PASS。
+- 2026-08-07 重新部署：镜像 `nexora:noratelimit-20260807T154034Z`，healthy、0.0.0.0:8002、非 privileged、无 Node/npm；登录实测 HTTP 303 成功。
 - 综合文件、行数、章节和尾随空白检查：PASS，22 个文档，最大 90 行。
 - 根目录必需文件 shell 检查：PASS，8 个文件齐全。
 - 关键决策 `rg` 一致性检查：PASS。
@@ -701,11 +705,29 @@ CIDR/gateway/DNS；恢复扩容必须同时验证目标 virtual size 与持久�
 
 ## Updated At
 
-2026-08-06 Asia/Shanghai
+2026-08-07 Asia/Shanghai
 
 ## Updated By
 
 OpenCode
+
+> 2026-08-07 移除登录限流：删除 `MAXIMUM_FAILURES`/`LOGIN_WINDOW`/`LoginRateLimitedError`/
+> `_failure_count`，`authenticate()` 不再因连续失败拒绝登录（保留 `LoginAttempt` 审计
+> 记录）；`web/routes/auth.py` 移除 429 分支；测试删除 `test_repeated_failures_are_rate_limited`；
+> `SECURITY.md` 同步移除"登录失败按来源和账号限速"安全基线条目。认证相关 24 tests PASS。
+
+> 2026-08-07 前端视觉一致性与联动逻辑审计整改并部署：Alert `message`→`title`（antd v6
+> deprecated）、主按钮统一 `type="primary"`、14 处表格补 `nx-responsive-table`、提取共享
+> `FactCard`/`format.ts`、统一 `.nx-metric-grid`、8 处页面标题补 `.nx-page-title`、筛选
+> 状态 URL 持久化（Vms/Audit/Tasks/Network）、任务完成后"返回源页面"（`navigateToTask`
+> + sessionStorage）、任务轮询 AbortController 与错误停止、弹窗宽度统一。前端 21 tests
+> + typecheck + build PASS。部署镜像 `nexora:noratelimit-20260807T154034Z`。
+
+> 2026-08-07 管理员密码重置：因登录失败记录与密码不符（数据库 `updated_at` 停留在
+> 2026-08-03，密码未被改动；根因是输入密码与库中不一致 + 限流计数），备份
+> `/data/backups/nexora-pre-pw-reset.tar.gz` 后重置为新密码，清空失败计数并递增
+> `session_version` 失效旧会话；`verify_password` 与 `authenticate` 双重验证通过，
+> 登录实测 HTTP 303 成功。
 
 > 2026-08-06 网络拓扑增强：修复节点颜色混淆（`vm_nic` 蓝、`virtual_machine` 深灰、
 > `tap`/`veth` 独立浅色），支持 PCI 透传网卡展示（hostdev→pci_device 地址匹配，

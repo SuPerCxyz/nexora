@@ -5,6 +5,7 @@ import type { ConsoleCredential } from "../api/consoles";
 import { createConsole } from "../api/consoles";
 import type { VmDetail, VmLifecycleAction } from "../api/contracts";
 import { submitVmLifecycle } from "../api/core";
+import { navigateToTask } from "./navigateToTask";
 import { VmConsoleModal } from "./VmConsoleModal";
 import { VmCloneModal } from "./VmCloneModal";
 import { VmMigrateModal } from "./VmMigrateModal";
@@ -30,7 +31,7 @@ export function VmActions({ data }: { data: VmDetail }) {
     setError(null);
     try {
       const task = await submitVmLifecycle(data.vm.host_id, data.vm.native_id, action, confirmation);
-      window.location.assign(task.location);
+      navigateToTask(task.location);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "虚拟机操作提交失败");
       setLoading(null);
@@ -101,7 +102,7 @@ export function VmActions({ data }: { data: VmDetail }) {
           )}
         </Flex>
       ) : null}
-      {error && <Alert type="error" showIcon={false} message={error} />}
+      {error && <Alert type="error" showIcon={false} title={error} />}
       <DangerousActionModal
         action={dangerousAction}
         vmName={data.vm.name}
@@ -181,7 +182,7 @@ function DangerousActionModal({
       destroyOnHidden
     >
       <Space orientation="vertical" size={12} className="nx-page-stack">
-        <Alert type="error" showIcon={false} message="强制操作可能造成客户机数据损坏。" />
+        <Alert type="error" showIcon={false} title="强制操作可能造成客户机数据损坏。" />
         <label htmlFor="vm-danger-confirmation">输入虚拟机名称 {vmName} 以确认</label>
         <Input id="vm-danger-confirmation" value={confirmationName} onChange={(event) => onNameChange(event.target.value)} autoComplete="off" />
       </Space>

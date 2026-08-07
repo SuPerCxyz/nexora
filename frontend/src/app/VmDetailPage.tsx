@@ -10,6 +10,8 @@ import type {
   VmInterfaceSummary,
 } from "../api/contracts";
 import { loadGuestAgent, loadVmDetail } from "../api/core";
+import { FactCard } from "./FactCard";
+import { formatBytes } from "./format";
 import { PageEmpty, PageError, PageLoading } from "./PageState";
 import { StatusTag, VmStatusTag } from "./StatusTag";
 import { VmActions } from "./VmActions";
@@ -37,7 +39,7 @@ export function VmDetailPage({ hostId, vmId }: { hostId: string; vmId: string })
   return (
     <Space orientation="vertical" size={12} className="nx-page-stack">
       <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
-        <div>
+        <div className="nx-page-title">
           <Flex align="center" gap={12} wrap>
             <Typography.Title level={2}>{data.vm.name}</Typography.Title>
             <VmStatusTag state={data.vm.state} />
@@ -48,11 +50,11 @@ export function VmDetailPage({ hostId, vmId }: { hostId: string; vmId: string })
         <Button className="nx-btn-info" href={`/hosts/${hostId}/vms/${vmId}/config`}>配置</Button>
       </Flex>
       <VmActions data={data} />
-      <div className="nx-fact-grid">
-        <Fact label="处理器" value={`${data.vm.vcpus ?? "—"} / ${data.maximum_vcpus ?? "—"} vCPU`} />
-        <Fact label="内存" value={`${data.vm.memory_mib ?? "—"} MiB`} />
-        <Fact label="自动启动" value={data.autostart ? "已启用" : "未启用"} />
-        <Fact label="配置状态" value={configurationLabel(data.configuration_status)} />
+      <div className="nx-metric-grid">
+        <FactCard label="处理器" value={`${data.vm.vcpus ?? "-"} / ${data.maximum_vcpus ?? "-"} vCPU`} />
+        <FactCard label="内存" value={`${data.vm.memory_mib ?? "-"} MiB`} />
+        <FactCard label="自动启动" value={data.autostart ? "已启用" : "未启用"} />
+        <FactCard label="配置状态" value={configurationLabel(data.configuration_status)} />
       </div>
       <MetricSummary data={data} />
       <Card title="子系统状态">
@@ -73,10 +75,6 @@ export function VmDetailPage({ hostId, vmId }: { hostId: string; vmId: string })
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
-  return <Card size="small" className="nx-fact-card"><span>{label}</span><strong>{value}</strong></Card>;
-}
-
 function Subsystem({ name, detail, ready }: { name: string; detail: string; ready: boolean }) {
   return <div className="nx-resource-tile"><span>{name}</span><strong>{detail}</strong><StatusTag label={ready ? "正常" : "未配置"} tone={ready ? "running" : "unknown"} /></div>;
 }
@@ -92,10 +90,10 @@ function MetricSummary({ data }: { data: VmDetail }) {
   const latest = data.metrics.at(-1);
   if (!latest) return <Card><PageEmpty description="等待首次虚拟机性能采样" /></Card>;
   return <div className="nx-metric-grid">
-    <Fact label="CPU 使用" value={latest.cpu_usage_percent === null ? "等待差分" : `${latest.cpu_usage_percent.toFixed(1)}%`} />
-    <Fact label="内存使用" value={formatKib(latest.memory_usage_kib)} />
-    <Fact label="磁盘累计 I/O" value={formatBytes(sum(latest.disk_read_bytes, latest.disk_write_bytes))} />
-    <Fact label="网络累计流量" value={formatBytes(sum(latest.net_rx_bytes, latest.net_tx_bytes))} />
+    <FactCard label="CPU 使用" value={latest.cpu_usage_percent === null ? "等待差分" : `${latest.cpu_usage_percent.toFixed(1)}%`} />
+    <FactCard label="内存使用" value={formatKib(latest.memory_usage_kib)} />
+    <FactCard label="磁盘累计 I/O" value={formatBytes(sum(latest.disk_read_bytes, latest.disk_write_bytes))} />
+    <FactCard label="网络累计流量" value={formatBytes(sum(latest.net_rx_bytes, latest.net_tx_bytes))} />
   </div>;
 }
 
@@ -188,12 +186,4 @@ function sum(first: number | null, second: number | null) {
 
 function formatKib(value: number | null) {
   return value === null ? "—" : `${(value / 1024).toFixed(0)} MiB`;
-}
-
-function formatBytes(value: number | null) {
-  if (value === null) return "—";
-  if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(1)} GiB`;
-  if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MiB`;
-  if (value >= 1024) return `${(value / 1024).toFixed(1)} KiB`;
-  return `${value} B`;
 }

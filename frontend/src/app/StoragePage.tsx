@@ -19,6 +19,7 @@ import {
   previewStorageVolume,
 } from "../api/storage";
 import { PageError, PageLoading } from "./PageState";
+import { navigateToTask } from "./navigateToTask";
 import { StorageChangePreviewModal } from "./StorageChangePreviewModal";
 import { StorageCreatePanel } from "./StorageCreatePanel";
 import { StorageTables } from "./StorageTables";
@@ -50,13 +51,13 @@ export function StoragePage() {
             ? applyStorageVolume(preview)
             : applyStorageMutation(preview)
       );
-      window.location.assign(task.location);
+      navigateToTask(task.location);
     } catch (caught) { setActionError(errorText(caught)); setLoading(false); }
   }
 
   async function lifecycle(pool: StoragePoolSummary, action: string) {
     setLoading(true); setActionError(null);
-    try { const task = await changeStoragePoolLifecycle(pool.resource_id, action); window.location.assign(task.location); }
+    try { const task = await changeStoragePoolLifecycle(pool.resource_id, action); navigateToTask(task.location); }
     catch (caught) { setActionError(errorText(caught)); setLoading(false); }
   }
 

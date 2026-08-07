@@ -39,7 +39,9 @@ import {
   loadVmMediaCreateOptions,
   previewVmMediaCreate,
 } from "../api/vmMediaCreate";
+import { navigateToTask } from "./navigateToTask";
 import { PageError } from "./PageState";
+import { formatBytes } from "./format";
 
 type DiskSource = "existing" | "blank" | "media";
 
@@ -245,7 +247,7 @@ export function VmCreatePage({ initialMode }: { initialMode?: DiskSource }) {
       } else {
         task = await applyVmMediaCreate(preview.value);
       }
-      window.location.assign(task.location);
+      navigateToTask(task.location);
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : "创建任务失败");
       setSubmitting(false);
@@ -258,7 +260,7 @@ export function VmCreatePage({ initialMode }: { initialMode?: DiskSource }) {
   return (
     <Space className="nx-page-stack nx-create-page" orientation="vertical" size={12}>
       <div className="nx-detail-header">
-        <Space orientation="vertical" size={6}>
+        <Space orientation="vertical" size={6} className="nx-page-title">
           <Button type="link" href="/vms" icon={<ArrowLeftOutlined />} className="nx-back-link">
             返回虚拟机
           </Button>
@@ -395,7 +397,7 @@ function DiskSourceCard({ options, mode, hostId }: { options: LoadedOptions; mod
     return (
       <Card title="存储与网络 · 已有系统盘">
         <Form.Item label="现有系统盘" name="volume_resource_id" rules={[{ required: true }]} tooltip="磁盘不会被复制、覆盖、扩容或删除。">
-          <Select aria-label="现有系统盘" showSearch optionFilterProp="label" disabled={!hostId} placeholder="选择未被虚拟机使用的系统盘" options={volumes.map((item) => ({ value: item.id, label: `${item.pool_name} / ${item.name} · ${item.format} · ${formatBytes(item.capacity_bytes)}` }))} />
+          <Select aria-label="现有系统盘" showSearch optionFilterProp="label" disabled={!hostId} placeholder="选择未被虚拟机使用的系统盘" options={volumes.map((item) => ({ value: item.id, label: `${item.pool_name} / ${item.name} · ${item.format} · ${formatBytes(item.capacity_bytes, { fixedUnit: "GiB" })}` }))} />
         </Form.Item>
       </Card>
     );
@@ -429,7 +431,7 @@ function DiskSourceCard({ options, mode, hostId }: { options: LoadedOptions; mod
           <Select showSearch optionFilterProp="label" disabled={!hostId} placeholder="先选择目标节点" options={targets.map((item) => ({ value: item.id, label: `${item.pool_name} · ${item.target_path}` }))} />
         </Form.Item>
         <Form.Item label="平台镜像" name="media_item_id" rules={[{ required: true }]}>
-          <Select showSearch optionFilterProp="label" placeholder="选择 qcow2/raw 镜像" options={options.media.media.map((item) => ({ value: item.id, label: `${item.file_name} · ${item.format} · ${formatBytes(item.size_bytes)}` }))} />
+          <Select showSearch optionFilterProp="label" placeholder="选择 qcow2/raw 镜像" options={options.media.media.map((item) => ({ value: item.id, label: `${item.file_name} · ${item.format} · ${formatBytes(item.size_bytes, { fixedUnit: "GiB" })}` }))} />
         </Form.Item>
         <Form.Item label="目标文件名" name="target_file_name" rules={[{ required: true, max: 255 }]} tooltip="禁止覆盖，扩展名必须与镜像格式一致。">
           <Input className="nx-technical-input" placeholder="example.qcow2" />
@@ -529,7 +531,7 @@ function VmCreatePreviewPanel({
               { key: "host", label: "节点", children: summary.host_name },
               { key: "compute", label: "计算规格", children: `${summary.vcpus} vCPU · ${summary.memory_mib} MiB` },
               { key: "pool", label: "存储池", children: summary.pool_name },
-              { key: "disk", label: "空白磁盘", children: `${summary.disk_name} · ${summary.volume_format} · ${formatBytes(summary.capacity_bytes)}` },
+              { key: "disk", label: "空白磁盘", children: `${summary.disk_name} · ${summary.volume_format} · ${formatBytes(summary.capacity_bytes, { fixedUnit: "GiB" })}` },
               { key: "network", label: "网络", children: summary.network },
               { key: "iso", label: "安装介质", children: summary.iso_name ?? "无" },
               { key: "firmware", label: "启动方式", children: firmwareLabel(summary) },
@@ -546,7 +548,7 @@ function VmCreatePreviewPanel({
               { key: "target", label: "目标路径", children: <code>{summary.target_path}</code> },
               { key: "sha", label: "SHA-256", children: <code>{summary.source_sha256}</code> },
               { key: "compute", label: "计算规格", children: `${summary.vcpus} vCPU · ${summary.memory_mib} MiB` },
-              { key: "capacity", label: "目标容量", children: summary.target_capacity_bytes ? formatBytes(summary.target_capacity_bytes) : "保持源容量" },
+              { key: "capacity", label: "目标容量", children: summary.target_capacity_bytes ? formatBytes(summary.target_capacity_bytes, { fixedUnit: "GiB" }) : "保持源容量" },
               { key: "network", label: "网络", children: summary.network },
               { key: "iso", label: "安装 ISO", children: summary.iso_name ?? "无" },
               { key: "driver", label: "Driver ISO", children: summary.driver_iso_name ?? "无" },
@@ -572,11 +574,6 @@ function VmCreatePreviewPanel({
       </div>
     </Space>
   );
-}
-
-function formatBytes(value: number): string {
-  const gibibytes = value / 1024 / 1024 / 1024;
-  return `${gibibytes.toLocaleString("zh-CN", { maximumFractionDigits: 1 })} GiB`;
 }
 
 function firmwareLabel(summary: { firmware: string; secure_boot: boolean }): string {

@@ -9,6 +9,9 @@ import type {
   VmSummary,
 } from "../api/contracts";
 import { loadHostDetail, scanHost } from "../api/core";
+import { FactCard } from "./FactCard";
+import { navigateToTask } from "./navigateToTask";
+import { formatBytes } from "./format";
 import { formatDateTime } from "./dateTime";
 import { PageEmpty, PageError, PageLoading } from "./PageState";
 import { HostStatusTag, StatusTag, VmStatusTag } from "./StatusTag";
@@ -39,13 +42,13 @@ export function HostDetailPage({ hostId }: { hostId: string }) {
   if (!data) return <PageLoading />;
   async function scan() {
     setScanning(true);
-    try { window.location.assign((await scanHost(data!.host.id)).location); }
+    try { navigateToTask((await scanHost(data!.host.id)).location); }
     catch (caught) { setError(caught instanceof Error ? caught : new Error("节点扫描提交失败")); setScanning(false); }
   }
   return (
     <Space orientation="vertical" size={12} className="nx-page-stack">
       <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
-        <div>
+        <div className="nx-page-title">
           <Flex align="center" gap={12} wrap>
             <Typography.Title level={2}>{data.host.name}</Typography.Title>
             <HostStatusTag status={data.host.status} />
@@ -56,11 +59,11 @@ export function HostDetailPage({ hostId }: { hostId: string }) {
         </div>
         <Space wrap><Button className="nx-btn-info" loading={scanning} onClick={scan}>刷新节点信息</Button><Button className="nx-btn-danger" onClick={() => setRemovalOpen(true)}>移除节点</Button></Space>
       </Flex>
-      <div className="nx-fact-grid">
-        <Fact label="登录用户" value={data.ssh_username} />
-        <Fact label="虚拟化连接" value={data.libvirt_uri} technical />
-        <Fact label="资源同步" value={formatTime(data.host.last_scanned_at)} />
-        <Fact label="节点 ID" value={data.host.id} technical />
+      <div className="nx-metric-grid">
+        <FactCard label="登录用户" value={data.ssh_username} />
+        <FactCard label="虚拟化连接" value={data.libvirt_uri} technical />
+        <FactCard label="资源同步" value={formatTime(data.host.last_scanned_at)} />
+        <FactCard label="节点 ID" value={data.host.id} technical />
       </div>
       <HostMetrics data={data} />
       <HardwareCard data={data} />
@@ -79,7 +82,7 @@ export function HostDetailPage({ hostId }: { hostId: string }) {
         </div>
       </Card>
       <Card title="虚拟机">
-        <Table rowKey="resource_id" columns={vmColumns} dataSource={data.virtual_machines} pagination={false} />
+        <Table className="nx-responsive-table" rowKey="resource_id" columns={vmColumns} dataSource={data.virtual_machines} pagination={false} tableLayout="fixed" />
       </Card>
       <HostRemovalModal hostId={data.host.id} hostName={data.host.name} open={removalOpen} onClose={() => setRemovalOpen(false)} />
     </Space>
@@ -100,7 +103,7 @@ function HardwareCard({ data }: { data: HostDetail }) {
     { key: "os", label: "操作系统", children: hardware.os_name ?? "暂未获取" },
     { key: "kernel", label: "内核", children: hardware.kernel ?? "暂未获取" },
     { key: "architecture", label: "架构", children: hardware.architecture ?? "暂未获取" },
-    { key: "memory", label: "内存", children: formatBytes(hardware.memory_bytes) },
+    { key: "memory", label: "内存", children: formatBytes(hardware.memory_bytes, { fixedUnit: "GiB" }) },
     { key: "cpu", label: "处理器", children: hardware.cpu_model ?? "暂未获取", span: 3 },
     { key: "topology", label: "CPU 拓扑", children: cpuTopology, span: 2 },
     { key: "numa", label: "NUMA", children: hardware.numa_nodes === null ? "暂未获取" : `${hardware.numa_nodes} 个节点` },
@@ -140,10 +143,6 @@ function FeatureStatus({ status }: { status: string }) {
   return <StatusTag label="需关注" tone="warning" />;
 }
 
-function Fact({ label, value, technical = false }: { label: string; value: string; technical?: boolean }) {
-  return <Card size="small" className="nx-fact-card"><span>{label}</span><strong className={technical ? "nx-technical" : ""}>{value}</strong></Card>;
-}
-
 function HostMetrics({ data }: { data: HostDetail }) {
   const metric = data.latest_metrics;
   if (!metric) return <Card><PageEmpty description="等待首次节点性能采样" /></Card>;
@@ -152,15 +151,11 @@ function HostMetrics({ data }: { data: HostDetail }) {
     ? Math.round(used * 100 / metric.memory_total_kib)
     : 0;
   return <div className="nx-metric-grid">
-    <Metric label="1 分钟负载" value={metric.load_1.toFixed(2)} />
-    <Metric label="5 / 15 分钟负载" value={`${metric.load_5.toFixed(2)} / ${metric.load_15.toFixed(2)}`} />
+    <FactCard label="1 分钟负载" value={metric.load_1.toFixed(2)} />
+    <FactCard label="5 / 15 分钟负载" value={`${metric.load_5.toFixed(2)} / ${metric.load_15.toFixed(2)}`} />
     <Card><span>内存使用</span><strong>{memoryPercent}%</strong><Progress percent={memoryPercent} showInfo={false} size="small" /></Card>
-    <Metric label="运行时间" value={`${Math.floor(metric.uptime_seconds / 3600)} 小时`} />
+    <FactCard label="运行时间" value={`${Math.floor(metric.uptime_seconds / 3600)} 小时`} />
   </div>;
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return <Card><span>{label}</span><strong>{value}</strong></Card>;
 }
 
 const vmColumns: ColumnsType<VmSummary> = [
@@ -223,9 +218,4 @@ function resourceTotal(data: HostDetail) {
 
 function formatTime(value: string | null) {
   return formatDateTime(value, { dateStyle: "medium", timeStyle: "short" }, "等待首次同步");
-}
-
-function formatBytes(value: number | null) {
-  if (value === null) return "暂未获取";
-  return `${(value / 1024 ** 3).toFixed(value >= 10 * 1024 ** 3 ? 0 : 1)} GiB`;
 }

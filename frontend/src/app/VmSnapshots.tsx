@@ -9,6 +9,7 @@ import {
   type SnapshotOperation,
   type SnapshotPreview,
 } from "../api/vmSnapshots";
+import { navigateToTask } from "./navigateToTask";
 import { PageEmpty } from "./PageState";
 import { StatusTag } from "./StatusTag";
 import { formatDateTime } from "./dateTime";
@@ -58,7 +59,7 @@ export function VmSnapshots({ hostId, vmId, vmName, snapshots }: Props) {
     setBusy(true);
     try {
       const confirmation = preview.operation === "revert" ? vmName : undefined;
-      window.location.assign(await applySnapshot(hostId, vmId, preview, confirmation));
+      navigateToTask(await applySnapshot(hostId, vmId, preview, confirmation));
     } catch (caught) {
       message.error(caught instanceof Error ? caught.message : "创建快照任务失败");
       setBusy(false);
@@ -75,19 +76,19 @@ export function VmSnapshots({ hostId, vmId, vmName, snapshots }: Props) {
 
   return <>
     <Space orientation="vertical" size={12} className="nx-page-stack">
-      <Button className="nx-btn-primary" onClick={() => open("create")}>创建快照</Button>
-      <Table rowKey="resource_id" columns={columns} dataSource={snapshots} pagination={false} locale={{ emptyText: <PageEmpty description="暂无快照" /> }} />
+      <Button type="primary" onClick={() => open("create")}>创建快照</Button>
+      <Table className="nx-responsive-table" rowKey="resource_id" columns={columns} dataSource={snapshots} pagination={false} tableLayout="fixed" locale={{ emptyText: <PageEmpty description="暂无快照" /> }} />
     </Space>
     <Modal title={title(target?.operation)} open={target !== null} onCancel={() => setTarget(null)} footer={null} width={720}>
       {!preview ? <Form form={form} layout="vertical" onFinish={createPreview}>
         <Form.Item name="name" label="快照名称" rules={[{ required: true }]}><Input disabled={target?.operation !== "create"} maxLength={128} /></Form.Item>
         {target?.operation === "create" && <Form.Item name="description" label="说明"><Input.TextArea maxLength={512} /></Form.Item>}
-        {target?.operation === "revert" && <Alert type="warning" showIcon message="恢复会将虚拟机回退到所选快照状态" />}
-        <Button htmlType="submit" className="nx-btn-primary" loading={busy}>生成变更预览</Button>
+        {target?.operation === "revert" && <Alert type="warning" showIcon title="恢复会将虚拟机回退到所选快照状态" />}
+        <Button htmlType="submit" type="primary" loading={busy}>生成变更预览</Button>
       </Form> : <Space orientation="vertical" size={12} className="nx-page-stack">
-        <Alert type={preview.operation === "delete" ? "warning" : "info"} showIcon message="执行前仍会重新校验虚拟机和快照版本" />
+        <Alert type={preview.operation === "delete" ? "warning" : "info"} showIcon title="执行前仍会重新校验虚拟机和快照版本" />
         <pre className="nx-code nx-code-light"><code>{preview.diffText}</code></pre>
-        <Space><Button onClick={() => setPreview(null)}>返回</Button><Button className={preview.operation === "delete" ? "nx-btn-danger" : "nx-btn-primary"} loading={busy} onClick={apply}>确认并创建任务</Button></Space>
+        <Space><Button onClick={() => setPreview(null)}>返回</Button><Button type={preview.operation === "delete" ? "default" : "primary"} danger={preview.operation === "delete"} loading={busy} onClick={apply}>确认并创建任务</Button></Space>
       </Space>}
     </Modal>
   </>;

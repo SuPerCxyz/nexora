@@ -16,11 +16,12 @@ const stateOptions = [
 ];
 
 export function VmsPage() {
-  const [page, setPage] = useState(1);
+  const initial = new URLSearchParams(window.location.search);
+  const [page, setPage] = useState(() => Number(initial.get("page")) || 1);
   const [data, setData] = useState<PaginatedResponse<VmSummary> | null>(null);
   const [hosts, setHosts] = useState<HostSummary[]>([]);
-  const [state, setState] = useState<string>();
-  const [hostId, setHostId] = useState<string>();
+  const [state, setState] = useState<string | undefined>(initial.get("state") || undefined);
+  const [hostId, setHostId] = useState<string | undefined>(initial.get("host_id") || undefined);
   const [error, setError] = useState<Error | null>(null);
   const [reload, setReload] = useState(0);
 
@@ -36,6 +37,18 @@ export function VmsPage() {
     setError(null);
     loadVms(page, PAGE_SIZE, state, hostId).then(setData).catch(setError);
   }, [page, state, hostId, reload]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", String(page));
+    if (state) params.set("state", state);
+    if (hostId) params.set("host_id", hostId);
+    const query = params.toString();
+    const newPath = query ? `/vms?${query}` : "/vms";
+    if (window.location.pathname + window.location.search !== newPath) {
+      window.history.replaceState({}, "", newPath);
+    }
+  }, [page, state, hostId]);
 
   if (error) return <PageError error={error} retry={() => setReload((value) => value + 1)} />;
   if (!data) return <PageLoading />;

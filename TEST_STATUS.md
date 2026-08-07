@@ -2,20 +2,23 @@
 
 ## 当前状态
 
-- 当前阶段：P9 零旧前端与 VM 操作闭环（P9-001~P9-010 完成并部署）
+- 当前阶段：P9 零旧前端与 VM 操作闭环（P9-001~P9-010 完成并部署）+ 前端审计整改
 - 已实现代码：internal JSON 配置、快照、克隆、存储变更、节点优先创建、空白磁盘、
-  关机迁移、删除重命名、网卡配置、XML 历史回滚、创建页三源合并与操作闭环修复
+  关机迁移、删除重命名、网卡配置、XML 历史回滚、创建页三源合并与操作闭环修复；
+  前端视觉一致性/联动逻辑整改（Alert/按钮/表格/共享组件/筛选持久化/任务返回/轮询）
 - 自动化测试：437 个通过；另有 25 个 opt-in 真实集成参数用例
 - 集成环境：Rocky 9.7 嵌套 KVM，详见专项目录
-- 最近验证：2026-08-06 网络拓扑增强（透传网卡展示 + 节点颜色区分）与 VM 操作闭环
-  修复；后端 454 passed、25 skipped；前端 21 tests + build；ruff/mypy 通过
+- 最近验证：2026-08-07 移除登录限流（认证相关 24 tests PASS）+ 前端审计整改部署；
+  后端 `uv run pytest -q` 通过；前端 21 tests + typecheck + build；ruff/mypy 通过
 - 迁移链 head：`20260803_0023`（`vm_xml_history`）
 
 ## 已执行验证
 
 | 日期 | 命令 | 结果 | 范围 |
 |---|---|---|---|
-| 2026-08-06 | 网络拓扑透传网卡 | PASS；后端 454 passed、25 skipped；新增 hostdev PCI→pci_device 匹配单测；kvm3 OpenWrt 2 个 I211 透传验证 | 拓扑透传/节点颜色 |
+| 2026-08-07 | 移除登录限流定向 | PASS；认证相关 24 tests（auth service + auth flow + frontend security + session + navigation）；Ruff 通过 | 限流移除/审计保留 |
+| 2026-08-07 | 前端审计整改 | PASS；21 tests + typecheck + `npm run build`；14 处表格响应式、Alert title、按钮统一、共享 FactCard/format | 视觉/联动整改 |
+| 2026-08-07 | 重新部署生产 | PASS；镜像 `nexora:noratelimit-20260807T154034Z`，healthy、0.0.0.0:8002、非 privileged、无 Node/npm；登录实测 HTTP 303 成功 | 单容器/登录 |
 | 2026-08-06 | 文档同步 + 测试补齐 | PASS；453 passed、25 skipped；新增 XML 历史回滚/`is_attachable_volume`/`needs_restart` 测试；修复 `xml_history` DELETE OFFSET 语法与 `created_at` 类型转换两个生产 bug | 审计整改/测试缺口 |
 | 2026-08-06 | VM 操作闭环修复全量 | PASS；437 passed、25 skipped；Ruff/Mypy；前端 21 tests + build | live detach/update、网卡弹窗、ISO 热插拔、CPU ≤、光驱添加、内存预检 |
 | 2026-08-06 | 数据库迁移链 | PASS；6 tests，head revision `20260803_0023` | 迁移（`vm_xml_history`） |

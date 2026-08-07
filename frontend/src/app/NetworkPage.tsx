@@ -6,6 +6,7 @@ import type { NetworkEdge, NetworkNode, NetworkOverview } from "../api/network";
 import { loadNetworks } from "../api/network";
 import { NetworkChangeModal } from "./NetworkChangeModal";
 import { NetworkTopologyGraph } from "./NetworkTopologyGraph";
+import { FactCard } from "./FactCard";
 import {
   defaultRouteInfo,
   managementInfo,
@@ -26,32 +27,42 @@ const legendItems = legendTypes.map((type) => ({
 }));
 
 export function NetworkPage() {
+  const initial = new URLSearchParams(window.location.search);
   const [data, setData] = useState<NetworkOverview | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [changeKind, setChangeKind] = useState<"bridge" | "vlan" | null>(null);
-  useEffect(() => { loadNetworks().then(setData).catch(setError); }, []);
-  async function selectHost(hostId: string) {
+  useEffect(() => { loadNetworks(initial.get("host_id") || undefined).then(setData).catch(setError); }, []);
+  async function selectHost(hostId: string | undefined) {
     try { setData(await loadNetworks(hostId)); }
     catch (caught) { setError(caught instanceof Error ? caught : new Error("网络拓扑读取失败")); }
   }
+  useEffect(() => {
+    if (!data?.selected_host_id) return;
+    const params = new URLSearchParams();
+    params.set("host_id", data.selected_host_id);
+    const newPath = `/networks?${params.toString()}`;
+    if (window.location.pathname + window.location.search !== newPath) {
+      window.history.replaceState({}, "", newPath);
+    }
+  }, [data?.selected_host_id]);
   if (error) return <PageError error={error} />;
   if (!data) return <PageLoading />;
   const topology = data.topology;
   return <Space orientation="vertical" size={12} className="nx-page-stack">
     <Flex className="nx-detail-header" justify="space-between" align="start" gap={16} wrap>
-      <div><Typography.Title level={2}>宿主机网络</Typography.Title><Typography.Text type="secondary">接口、Bridge、VLAN、vnet 与虚拟机关系</Typography.Text></div>
+      <div className="nx-page-title"><Typography.Title level={2}>宿主机网络</Typography.Title><Typography.Text type="secondary">接口、Bridge、VLAN、vnet 与虚拟机关系</Typography.Text></div>
       <Space wrap>
         <Select aria-label="节点" value={data.selected_host_id} options={data.hosts.map((host) => ({ value: host.id, label: host.name }))} onChange={selectHost} className="nx-host-select" placeholder="选择节点" />
-        {data.selected_host_id && <Button className="nx-btn-primary" onClick={() => setChangeKind("bridge")}>创建 Bridge</Button>}
+        {data.selected_host_id && <Button type="primary" onClick={() => setChangeKind("bridge")}>创建 Bridge</Button>}
         {data.selected_host_id && <Button className="nx-btn-info" onClick={() => setChangeKind("vlan")}>创建 VLAN</Button>}
       </Space>
     </Flex>
     {!topology ? <Card><PageEmpty description="添加并扫描 KVM 节点后显示网络资源" /></Card> : <>
-      <div className="nx-fact-grid">
-        <Fact label="拓扑节点" value={topology.nodes.length} />
-        <Fact label="拓扑关系" value={topology.edges.length} />
-        <Fact label="告警" value={topology.warning_count} />
-        <Tooltip title={managementInfo.description}><span><Fact label="管理链路" value={topology.nodes.filter((node) => node.management).length} /></span></Tooltip>
+      <div className="nx-metric-grid">
+        <FactCard label="拓扑节点" value={topology.nodes.length} />
+        <FactCard label="拓扑关系" value={topology.edges.length} />
+        <FactCard label="告警" value={topology.warning_count} />
+        <Tooltip title={managementInfo.description}><span><FactCard label="管理链路" value={topology.nodes.filter((node) => node.management).length} /></span></Tooltip>
       </div>
       <Card title="拓扑图">
         <NetworkTopologyGraph nodes={topology.nodes} edges={topology.edges} />
@@ -63,10 +74,6 @@ export function NetworkPage() {
     </>}
     {data.selected_host_id && <NetworkChangeModal hostId={data.selected_host_id} kind={changeKind ?? "bridge"} open={changeKind !== null} onClose={() => setChangeKind(null)} />}
   </Space>;
-}
-
-function Fact({ label, value }: { label: string; value: number }) {
-  return <Card size="small" className="nx-fact-card"><span>{label}</span><strong>{value}</strong></Card>;
 }
 
 const nodeColumns: ColumnsType<NetworkNode> = [

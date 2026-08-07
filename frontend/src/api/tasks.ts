@@ -5,8 +5,8 @@ export function loadTasks(): Promise<{ items: TaskSummary[] }> {
   return internalRequest<{ items: TaskSummary[] }>("/internal/tasks");
 }
 
-export function loadTask(taskId: string): Promise<TaskDetail> {
-  return internalRequest<TaskDetail>(`/internal/tasks/${encodeURIComponent(taskId)}`);
+export function loadTask(taskId: string, signal?: AbortSignal): Promise<TaskDetail> {
+  return internalRequest<TaskDetail>(`/internal/tasks/${encodeURIComponent(taskId)}`, { signal });
 }
 
 export function cancelTask(taskId: string): Promise<TaskCreated> {

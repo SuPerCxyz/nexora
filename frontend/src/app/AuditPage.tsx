@@ -9,15 +9,28 @@ import { PageEmpty, PageError, PageLoading } from "./PageState";
 import { StatusTag } from "./StatusTag";
 
 export function AuditPage() {
+  const initial = new URLSearchParams(window.location.search);
+  const initialPage = Math.max(1, Number(initial.get("page")) || 1);
   const [data, setData] = useState<AuditPayload | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const [hostId, setHostId] = useState<string | undefined>();
-  const [outcome, setOutcome] = useState("all");
-  useEffect(() => { loadAudit().then(setData).catch(setError); }, []);
+  const [hostId, setHostId] = useState<string | undefined>(initial.get("host_id") || undefined);
+  const [outcome, setOutcome] = useState(initial.get("outcome") || "all");
+  useEffect(() => { loadAudit(initialPage, hostId, outcome).then(setData).catch(setError); }, []);
   function apply(page = 1, nextHost = hostId, nextOutcome = outcome) {
     setError(null);
     loadAudit(page, nextHost, nextOutcome).then(setData).catch(setError);
   }
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (hostId) params.set("host_id", hostId);
+    if (outcome !== "all") params.set("outcome", outcome);
+    if (data && data.page > 1) params.set("page", String(data.page));
+    const query = params.toString();
+    const newPath = query ? `/audit?${query}` : "/audit";
+    if (window.location.pathname + window.location.search !== newPath) {
+      window.history.replaceState({}, "", newPath);
+    }
+  }, [hostId, outcome, data]);
   if (error) return <PageError error={error} />;
   if (!data) return <PageLoading />;
   return <Space orientation="vertical" size={12} className="nx-page-stack">
@@ -29,7 +42,7 @@ export function AuditPage() {
       </Space>
     </Flex>
     <Card title={`最近记录 · ${data.total} 条`}>
-      <Table rowKey="operation_id" columns={columns} dataSource={data.items} pagination={false} locale={{ emptyText: <PageEmpty description="没有匹配的审计记录" /> }} scroll={{ x: 980 }} expandable={{ rowExpandable: (item) => Boolean(item.stdout_summary || item.stderr_summary), expandedRowRender: AuditOutput }} />
+      <Table className="nx-responsive-table" rowKey="operation_id" columns={columns} dataSource={data.items} pagination={false} locale={{ emptyText: <PageEmpty description="没有匹配的审计记录" /> }} scroll={{ x: 980 }} tableLayout="fixed" expandable={{ rowExpandable: (item) => Boolean(item.stdout_summary || item.stderr_summary), expandedRowRender: AuditOutput }} />
       <Pagination className="nx-table-footer" current={data.page} pageSize={50} total={data.total} showSizeChanger={false} onChange={(page) => apply(page)} />
     </Card>
   </Space>;

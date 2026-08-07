@@ -9,7 +9,7 @@ export function AuthPage({ mode, error, csrf }: { mode: string; error: string | 
   return <main className="nx-auth-page"><Card className="nx-auth-card">
     <Typography.Title level={1}>{initialize ? "创建本地管理员" : "管理员登录"}</Typography.Title>
     <Typography.Paragraph type="secondary">{initialize ? "建立 Nexora 的唯一管理员账户" : "登录后管理虚拟机、节点、存储与网络"}</Typography.Paragraph>
-    {error && <Alert type="error" showIcon message={error} />}
+    {error && <Alert type="error" showIcon title={error} />}
     <Form layout="vertical" onFinish={submit}>
       <Form.Item label="管理员用户名" name="username" rules={[{ required: true }]}><Input autoComplete="username" maxLength={64} autoFocus /></Form.Item>
       <Form.Item label="密码" name="password" rules={[{ required: true }]}><Input.Password autoComplete={initialize ? "new-password" : "current-password"} /></Form.Item>

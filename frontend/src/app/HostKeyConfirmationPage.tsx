@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { HostKeyConfirmation } from "../api/contracts";
 import { confirmHostKey, loadHostKeyConfirmation } from "../api/hosts";
+import { navigateToTask } from "./navigateToTask";
 import { PageError } from "./PageState";
 
 export function HostKeyConfirmationPage({ hostId }: { hostId: string }) {
@@ -23,7 +24,7 @@ export function HostKeyConfirmationPage({ hostId }: { hostId: string }) {
     setConfirmationError(null);
     try {
       const task = await confirmHostKey(hostId, confirmation.host_key_digest);
-      window.location.assign(task.location);
+      navigateToTask(task.location);
     } catch (caught) {
       setConfirmationError(caught instanceof Error ? caught.message : "Host Key 确认失败");
       setSubmitting(false);
@@ -36,7 +37,7 @@ export function HostKeyConfirmationPage({ hostId }: { hostId: string }) {
   return (
     <Space className="nx-page-stack nx-create-page" orientation="vertical" size={12}>
       <div className="nx-detail-header">
-        <Space orientation="vertical" size={6}>
+        <Space orientation="vertical" size={6} className="nx-page-title">
           <Button type="link" href="/hosts" icon={<ArrowLeftOutlined />} className="nx-back-link">返回节点</Button>
           <Typography.Title level={2}>确认 SSH Host Key</Typography.Title>
           <Typography.Text type="secondary">确认后才会尝试 SSH 认证并开始只读能力探测。</Typography.Text>

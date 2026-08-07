@@ -22,11 +22,11 @@ export function MediaCredentialModal({
   }
   return <Modal title="ISO 访问凭据" open={credential !== null} onCancel={onClose} footer={null} maskClosable={false} destroyOnHidden>
     {credential && <Space orientation="vertical" size={12} className="nx-page-stack">
-      <Alert type="warning" showIcon={false} message="Bearer Token 只显示一次，不得写入日志或 URL。" />
+      <Alert type="warning" showIcon={false} title="Bearer Token 只显示一次，不得写入日志或 URL。" />
       <CredentialValue label="Content URL" value={credential.content_url} />
       <CredentialValue label="Bearer Token" value={credential.token} />
       <Typography.Text type="secondary">有效期至 {formatDateTime(credential.expires_at, { dateStyle: "short", timeStyle: "medium" })}</Typography.Text>
-      {error && <Alert type="error" showIcon={false} message={error} />}
+      {error && <Alert type="error" showIcon={false} title={error} />}
       <Space><Button onClick={onClose}>关闭</Button><Button className="nx-btn-danger" loading={revoking} onClick={revoke}>立即撤销</Button></Space>
     </Space>}
   </Modal>;

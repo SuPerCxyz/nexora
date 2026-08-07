@@ -15,6 +15,7 @@ import { useState } from "react";
 
 import type { HostOnboardingRequest } from "../api/contracts";
 import { beginHostOnboarding } from "../api/hosts";
+import { navigateToTask } from "./navigateToTask";
 
 type FormValues = Omit<HostOnboardingRequest, "labels"> & { labels?: string };
 
@@ -36,7 +37,7 @@ export function HostOnboardingPage() {
         labels: (values.labels ?? "").split(",").map((item) => item.trim()).filter(Boolean),
         notes: values.notes || null,
       });
-      window.location.assign(started.location);
+      navigateToTask(started.location);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "节点 Host Key 扫描失败");
       setSubmitting(false);
@@ -46,7 +47,7 @@ export function HostOnboardingPage() {
   return (
     <Space className="nx-page-stack nx-create-page" orientation="vertical" size={12}>
       <div className="nx-detail-header">
-        <Space orientation="vertical" size={6}>
+        <Space orientation="vertical" size={6} className="nx-page-title">
           <Button type="link" href="/hosts" icon={<ArrowLeftOutlined />} className="nx-back-link">
             返回节点
           </Button>

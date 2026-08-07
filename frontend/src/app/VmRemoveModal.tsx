@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import type { VmDetail, VmRemovePreview } from "../api/contracts";
 import { applyVmRemove, previewVmRemove } from "../api/core";
+import { navigateToTask } from "./navigateToTask";
 
 export function VmRemoveModal({ data, open, mode, onClose }: {
   data: VmDetail;
@@ -50,7 +51,7 @@ export function VmRemoveModal({ data, open, mode, onClose }: {
       const task = await applyVmRemove(
         data.vm.host_id, data.vm.native_id, preview, confirmationName,
       );
-      window.location.assign(task.location);
+      navigateToTask(task.location);
     } catch (caught) {
       message.error(caught instanceof Error ? caught.message : `创建${title}任务失败`);
       setBusy(false);
@@ -59,7 +60,7 @@ export function VmRemoveModal({ data, open, mode, onClose }: {
 
   return <Modal title={title} open={open} onCancel={onClose} footer={null} width={720}>
     {!preview ? <Form form={form} layout="vertical" onFinish={generate}>
-      <Alert type="warning" showIcon message="虚拟机必须已关机。删除操作默认仅移除虚拟机定义，保留磁盘。"/>
+      <Alert type="warning" showIcon title="虚拟机必须已关机。删除操作默认仅移除虚拟机定义，保留磁盘。"/>
       {mode === "rename" ? (
         <Form.Item name="target_name" label="新虚拟机名称" rules={[{ required: true }]}><Input maxLength={128} placeholder={data.vm.name} /></Form.Item>
       ) : (
@@ -71,7 +72,7 @@ export function VmRemoveModal({ data, open, mode, onClose }: {
       <Button htmlType="submit" className="nx-btn-danger" loading={busy}>{mode === "delete" ? "生成删除预览" : "生成重命名预览"}</Button>
     </Form> : <Space orientation="vertical" size={12} className="nx-page-stack">
       <pre className="nx-code nx-code-light"><code>{preview.diff_text}</code></pre>
-      <Alert type="error" showIcon message={`输入虚拟机名称 ${data.vm.name} 以确认`} />
+      <Alert type="error" showIcon title={`输入虚拟机名称 ${data.vm.name} 以确认`} />
       <Input value={confirmationName} onChange={(event) => setConfirmationName(event.target.value)} autoComplete="off" placeholder="虚拟机名称" />
       <Space>
         <Button onClick={() => setPreview(null)}>返回</Button>
