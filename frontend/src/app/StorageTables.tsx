@@ -33,7 +33,7 @@ export function StorageTables({
     { title: "格式", dataIndex: "format", render: (value) => <code>{value ?? "—"}</code> },
     { title: "容量", dataIndex: "capacity_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
     { title: "分配", dataIndex: "allocation_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
-    { title: "状态", render: (_, volume) => <StatusTag label={volume.writable ? "已纳管" : "只读"} tone={volume.writable ? "running" : "unknown"} /> },
+    { title: "状态", render: (_, volume) => <Flex gap={6} className="nx-inline-tags"><StatusTag label={volume.in_use ? "使用中" : "未使用"} tone={volume.in_use ? "running" : "stopped"} />{!volume.writable && <StatusTag label="只读" tone="unknown" />}</Flex> },
     { title: "操作", width: 100, render: (_, volume) => volume.writable ? <VolumeActions volume={volume} loading={loading} onMutation={onMutation} /> : <Typography.Text type="secondary">只读</Typography.Text> },
   ];
   return (

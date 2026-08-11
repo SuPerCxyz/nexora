@@ -16,7 +16,8 @@ from nexora.storage.task_contracts import (
     StoragePoolLifecycleInput,
     StoragePoolTaskInput,
 )
-from nexora.storage.volume_contracts import StorageVolumeCreateInput
+from nexora.storage.usage import StoragePoolUsageGuard
+from nexora.storage.volume_contracts import StorageVolumeCreateInput, is_display_volume
 from nexora.storage.volume_service import StorageVolumeError, StorageVolumeService
 from nexora.storage.volume_tasks import StorageVolumeTaskInput
 from nexora.tasks.definitions import TaskCreate
@@ -49,10 +50,16 @@ async def storage_overview(request: Request) -> JSONResponse:
     if isinstance(denied, JSONResponse):
         return denied
     reads = StorageReadService(request.app.state.database)
+    volumes = [
+        view
+        for view in reads.volumes()
+        if is_display_volume(view.volume.display_name, str(view.details.get("format") or ""))
+    ]
+    usage = StoragePoolUsageGuard(request.app.state.database)
     payload = StorageOverviewResponse(
         hosts=[StorageHostOption(id=item.id, name=item.name) for item in reads.hosts()],
         pools=[_pool_summary(item) for item in reads.pools()],
-        volumes=[_volume_summary(item) for item in reads.volumes()],
+        volumes=[_volume_summary(view, usage) for view in volumes],
     )
     return _response(payload.model_dump())
 
@@ -296,8 +303,15 @@ def _pool_summary(view: StoragePoolView) -> StoragePoolSummary:
     )
 
 
-def _volume_summary(view: StorageVolumeView) -> StorageVolumeSummary:
+def _volume_summary(view: StorageVolumeView, usage: StoragePoolUsageGuard) -> StorageVolumeSummary:
     details = view.details
+    references = usage.volume_references(
+        view.host.id,
+        pool_name=view.pool.display_name,
+        volume_name=view.volume.display_name,
+        volume_key=str(view.volume.native_id),
+        volume_path=_text(details.get("path")),
+    )
     return StorageVolumeSummary(
         resource_id=view.volume.id,
         host_id=view.host.id,
@@ -309,6 +323,7 @@ def _volume_summary(view: StorageVolumeView) -> StorageVolumeSummary:
         format=_text(details.get("format")),
         capacity_bytes=_integer(details.get("capacity_bytes")),
         allocation_bytes=_integer(details.get("allocation_bytes")),
+        in_use=bool(references),
         writable=view.volume.status == "managed" and view.volume.persistent_hash is not None,
     )
 

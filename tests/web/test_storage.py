@@ -115,7 +115,8 @@ def test_internal_storage_previews_pool_and_volume_then_enqueues_tasks(
         overview = client.get("/internal/storage")
         assert 200 == overview.status_code
         assert "images" == overview.json()["pools"][0]["name"]
-        assert "vm.qcow2" == overview.json()["volumes"][0]["name"]
+        volume_names = {item["name"] for item in overview.json()["volumes"]}
+        assert "vm.qcow2" in volume_names
 
         pool_preview = client.post(
             "/internal/storage/pools/preview",
@@ -160,6 +161,25 @@ def test_internal_storage_previews_pool_and_volume_then_enqueues_tasks(
             )
             assert 201 == applied.status_code
             assert applied.json()["location"].startswith("/tasks/")
+
+
+def test_internal_storage_overview_filters_non_volume_files_and_reports_usage(
+    settings: Settings,
+) -> None:
+    with TestClient(create_app(settings)) as client:
+        _initialize(client)
+        _seed_host(client)
+        _seed_storage(client)
+
+        overview = client.get("/internal/storage")
+        assert 200 == overview.status_code
+        volumes = {item["name"]: item for item in overview.json()["volumes"]}
+
+        assert "vm.qcow2" in volumes
+        assert "installer.iso" in volumes
+        assert "notes.xml" not in volumes
+        assert volumes["vm.qcow2"]["in_use"] is True
+        assert volumes["installer.iso"]["in_use"] is False
 
 
 def test_internal_storage_volume_delete_uses_json_preview(settings: Settings) -> None:
@@ -268,6 +288,65 @@ def _seed_storage(client: TestClient) -> None:
                         "path": "/images/vm.qcow2",
                         "format": "qcow2",
                         "capacity_bytes": 1024**3,
+                    }
+                ),
+                **common,
+            )
+        )
+        session.add(
+            ResourceIndex(
+                id="volume-2",
+                resource_type=ResourceType.STORAGE_VOLUME,
+                native_id=json.dumps([pool_uuid, "/images/installer.iso"]),
+                parent_native_id=pool_uuid,
+                display_name="installer.iso",
+                persistent_hash="c" * 64,
+                details_json=json.dumps(
+                    {
+                        "key": "/images/installer.iso",
+                        "path": "/images/installer.iso",
+                        "format": "iso",
+                        "capacity_bytes": 512 * 1024**2,
+                    }
+                ),
+                **common,
+            )
+        )
+        session.add(
+            ResourceIndex(
+                id="volume-3",
+                resource_type=ResourceType.STORAGE_VOLUME,
+                native_id=json.dumps([pool_uuid, "/images/notes.xml"]),
+                parent_native_id=pool_uuid,
+                display_name="notes.xml",
+                persistent_hash="d" * 64,
+                details_json=json.dumps(
+                    {
+                        "key": "/images/notes.xml",
+                        "path": "/images/notes.xml",
+                        "format": "raw",
+                        "capacity_bytes": 4 * 1024,
+                    }
+                ),
+                **common,
+            )
+        )
+        session.add(
+            ResourceIndex(
+                id="vm-1",
+                resource_type=ResourceType.VIRTUAL_MACHINE,
+                native_id="11111111-1111-1111-1111-111111111112",
+                display_name="demo",
+                persistent_hash="e" * 64,
+                details_json=json.dumps(
+                    {
+                        "state": "running",
+                        "disks": [
+                            {
+                                "source": "/images/vm.qcow2",
+                                "key": "/images/vm.qcow2",
+                            }
+                        ],
                     }
                 ),
                 **common,

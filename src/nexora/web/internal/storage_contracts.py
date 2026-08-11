@@ -36,6 +36,7 @@ class StorageVolumeSummary(BaseModel):
     format: str | None
     capacity_bytes: int | None
     allocation_bytes: int | None
+    in_use: bool
     writable: bool
 
 

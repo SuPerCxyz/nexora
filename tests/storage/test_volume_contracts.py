@@ -4,6 +4,7 @@ from lxml import etree
 from nexora.storage.volume_contracts import (
     StorageVolumeCreateInput,
     is_attachable_volume,
+    is_display_volume,
 )
 from nexora.storage.volume_xml import build_volume_xml
 
@@ -84,3 +85,27 @@ def test_is_attachable_volume_accepts_disk_images_only(
 def test_is_attachable_volume_rejects_unsupported_format_extension() -> None:
     assert not is_attachable_volume("system.qcow2", "iso")
     assert not is_attachable_volume("installer.iso", "iso")
+
+
+@pytest.mark.parametrize(
+    ("name", "volume_format", "expected"),
+    [
+        ("system.qcow2", "qcow2", True),
+        ("data.raw", "raw", True),
+        ("boot.img", "raw", True),
+        ("installer.iso", "iso", True),
+        ("DATA.ISO", "iso", True),
+        ("backup.tar.gz", "raw", False),
+        ("notes.xml", "raw", False),
+        ("openwrt.xml", "raw", False),
+        ("archive.zip", "qcow2", False),
+        ("readme.txt", "raw", False),
+        ("system.qcow2", "vmdk", False),
+    ],
+)
+def test_is_display_volume_accepts_disk_images_and_iso(
+    name: str,
+    volume_format: str,
+    expected: bool,
+) -> None:
+    assert expected == is_display_volume(name, volume_format)

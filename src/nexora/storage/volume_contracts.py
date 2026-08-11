@@ -12,6 +12,11 @@ MAX_CAPACITY = 8 * 1024**5
 ATTACHABLE_FORMATS = {"qcow2", "raw"}
 ATTACHABLE_EXTENSIONS = (".qcow2", ".qcow", ".qcow1", ".raw", ".img")
 
+# 展示白名单: 磁盘镜像 + 光驱 ISO. libvirt 会把普通文件 (如 .xml, .tar.gz)
+# 探测成 raw, 读路径用它过滤非存储卷实体.
+DISPLAY_FORMATS = {"qcow2", "raw", "iso"}
+DISPLAY_EXTENSIONS = (".qcow2", ".qcow", ".qcow1", ".raw", ".img", ".iso")
+
 
 def is_attachable_volume(display_name: str, volume_format: str | None) -> bool:
     """判断卷是否为可挂载给虚拟机的磁盘镜像。
@@ -23,6 +28,18 @@ def is_attachable_volume(display_name: str, volume_format: str | None) -> bool:
         return False
     lowered = display_name.lower()
     return any(lowered.endswith(extension) for extension in ATTACHABLE_EXTENSIONS)
+
+
+def is_display_volume(display_name: str, volume_format: str | None) -> bool:
+    """判断卷是否作为存储卷展示 (磁盘镜像或光驱 ISO).
+
+    与 ``is_attachable_volume`` 相比额外包含 ``iso``, 避免隐藏 CD-ROM 镜像;
+    同时排除 libvirt 误标 raw 的普通文件 (如 ``.xml``).
+    """
+    if volume_format not in DISPLAY_FORMATS:
+        return False
+    lowered = display_name.lower()
+    return any(lowered.endswith(extension) for extension in DISPLAY_EXTENSIONS)
 
 
 @dataclass(frozen=True)

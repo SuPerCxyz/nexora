@@ -516,6 +516,7 @@ export type StorageVolumeSummary = {
   format: string | null;
   capacity_bytes: number | null;
   allocation_bytes: number | null;
+  in_use: boolean;
   writable: boolean;
 };
 
