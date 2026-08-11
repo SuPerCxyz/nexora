@@ -80,6 +80,8 @@
 | NEW-9 | 网络拓扑透传网卡展示 + 节点颜色区分 | DONE | NEW-3 | 2026-08-06；hostdev PCI→pci_device 地址匹配生成 vm_nic 节点并关联 VM，`vm_nic`/`virtual_machine` 分色；kvm3 OpenWrt 2 个 I211 透传验证 |
 | NEW-10 | 前端视觉一致性与联动逻辑审计整改 | DONE | NEW-2 | 2026-08-07；Alert title/主按钮/表格响应式/共享组件/标题包裹/筛选 URL 持久化/任务返回/轮询健壮性/弹窗宽度，部署 `nexora:noratelimit-20260807T154034Z` |
 | NEW-11 | 移除登录限流 | DONE | NEW-10 | 2026-08-07；移除失败次数锁定与 429 分支，保留登录审计记录；SECURITY.md 同步 |
+| NEW-12 | 存储页面节点维度管理 | DONE | P8-015 | 2026-08-10；顶部节点选择器（默认全部节点），选定后池/卷表仅显示该节点资源，创建池节点自动带入选定节点，创建卷目标 Pool 仅列该节点 active managed 池；前端 23 tests + 部署验证 |
+| NEW-13 | 存储卷展示过滤与使用状态 | DONE | NEW-12 | 2026-08-10；过滤 libvirt 误标 raw 的普通文件（如 openwrt.xml），仅展示磁盘镜像与光驱 ISO（`is_display_volume`）；卷状态改为基于 VM 引用的"使用中/未使用"，只读卷保留只读提示；后端 465 tests + 部署验证 |
 
 P7 暂不包含 aarch64、Rocky 之外的 RHEL 系发行版、在线迁移、任意历史分支恢复、
 复杂 external/raw/block/network Snapshot 链及 Bond/OVS/VXLAN 写入。

@@ -11,6 +11,16 @@ P9：React 零旧前端与 VM 操作闭环。
 
 ## Current Task
 
+2026-08-10 更新：存储卷展示修正——过滤 libvirt 误标 raw 的普通文件（如 openwrt.xml），
+仅展示磁盘镜像与光驱 ISO；卷状态由"已纳管/只读"改为基于 VM 引用的"使用中/未使用"，
+只读卷仍保留只读提示与操作禁用。重新构建部署生产，回滚镜像
+`nexora:pre-volume-filter-20260810T163000Z` 保留。
+
+2026-08-10 更新：存储页面改为以节点为维度管理——顶部节点选择器（默认"全部节点"），
+选定节点后存储池与存储卷表仅显示该节点资源，创建存储池时节点自动带入选定节点，
+创建存储卷的目标 Pool 下拉仅列出该节点的 active managed Pool。前端改动并重新构建
+部署，生产镜像 `nexora:pre-storage-node-20260810T160300Z` 保留用于回滚。
+
 2026-08-07 更新：完成前端视觉一致性与联动逻辑审计整改并重新部署生产；移除
 登录限流（详见下方记录）。P9 阶段（P9-001~P9-010）此前已全部完成并部署生产。
 P9-001 至 P9-006 核心清理于 2026-08-05 部署（镜像 `sha256:47f531f429e7`，含空白磁盘、
@@ -314,11 +324,8 @@ worker/Tunnel/Session 零残留。PyPI websockify 因传递 Redis 依赖被拒�
 
 ## Remaining Work
 
-- 补充自动化测试缺口：`configuration/history|rollback` Web 单测、`needs_restart=True`
-  场景单测、`is_attachable_volume` 直接单元测试（见 TEST_STATUS 与审计报告）。
 - 在具备隔离测试设备的 Rocky 节点验证预绑定 `vfio-pci` PCI 直通和零残留清理。
 - 真实 Rocky 远端跑 `tests/integration/test_remote_vm_clone.py`（跨节点迁移）。
-- 启用 agent-browser 复核 1280/375px 密度（NEW-2 密度收紧未做视觉 QA）。
 - aarch64 与 Rocky 之外 RHEL 系发行版验证暂缓，不计入 P7 验收。
 
 ## Known Problems
@@ -432,6 +439,17 @@ worker/Tunnel/Session 零残留。PyPI websockify 因传递 Redis 依赖被拒�
 
 ## Tests Run
 
+- 2026-08-10 存储卷过滤与使用状态：后端 `uv run pytest -q` PASS，465 passed、
+  25 skipped；ruff/mypy PASS；前端 typecheck + 24 tests + build PASS。
+- 2026-08-10 存储卷过滤部署：备份 `/data/backups/nexora-20260810T163123Z.tar.gz`；
+  重建镜像并部署，healthy、live 200、SQLite quick_check ok；agent-browser 验证
+  openwrt.xml 不再显示、openwrt-data.qcow2 使用中、iso/img 未使用、1280/375px 无溢出。
+- 2026-08-10 存储节点维度：前端 typecheck PASS；`npm test` PASS，23 tests（含新增
+  StorageNodeDimension 2 tests 与 StorageWording 更新）；`npm run build` PASS。
+- 2026-08-10 存储节点维度部署：备份 `/data/backups/nexora-20260810T160240Z.tar.gz`；
+  重建镜像并部署，healthy、live/ready 200、SQLite quick_check ok；agent-browser 验证
+  kvm3 选择后池/卷表仅显示该节点资源、创建卷目标 Pool 仅列 kvm3/system、"全部节点"
+  恢复完整视图；1280/375px 均无溢出。
 - 2026-08-07 移除登录限流：`uv run pytest tests/auth/ tests/web/test_auth_flow.py tests/web/test_frontend_security.py tests/web/test_internal_session_api.py tests/web/test_navigation.py`：PASS，24 tests；Ruff 通过。
 - 2026-08-07 前端审计整改：`npm run typecheck` PASS；`npm test` PASS，21 tests；`npm run build` PASS。
 - 2026-08-07 重新部署：镜像 `nexora:noratelimit-20260807T154034Z`，healthy、0.0.0.0:8002、非 privileged、无 Node/npm；登录实测 HTTP 303 成功。

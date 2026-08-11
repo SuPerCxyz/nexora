@@ -2,13 +2,17 @@
 
 ## 当前状态
 
-- 当前阶段：P9 零旧前端与 VM 操作闭环（P9-001~P9-010 完成并部署）+ 前端审计整改
+- 当前阶段：P9 零旧前端与 VM 操作闭环（P9-001~P9-010 完成并部署）+ 前端审计整改 + 存储节点维度
 - 已实现代码：internal JSON 配置、快照、克隆、存储变更、节点优先创建、空白磁盘、
   关机迁移、删除重命名、网卡配置、XML 历史回滚、创建页三源合并与操作闭环修复；
-  前端视觉一致性/联动逻辑整改（Alert/按钮/表格/共享组件/筛选持久化/任务返回/轮询）
+  前端视觉一致性/联动逻辑整改（Alert/按钮/表格/共享组件/筛选持久化/任务返回/轮询）；
+  存储页面节点维度管理（节点选择器过滤池/卷并联动创建表单）；存储卷展示过滤
+  （`is_display_volume` 排除误标 raw 的普通文件）与使用状态（`in_use` 基于 VM 引用）
 - 自动化测试：437 个通过；另有 25 个 opt-in 真实集成参数用例
 - 集成环境：Rocky 9.7 嵌套 KVM，详见专项目录
-- 最近验证：2026-08-07 移除登录限流（认证相关 24 tests PASS）+ 前端审计整改部署；
+- 最近验证：2026-08-10 存储卷过滤与使用状态（后端 465 tests + 前端 24 tests + 部署）；
+  2026-08-10 存储节点维度（前端 23 tests + typecheck + build + 部署验证）；
+  2026-08-07 移除登录限流（认证相关 24 tests PASS）+ 前端审计整改部署；
   后端 `uv run pytest -q` 通过；前端 21 tests + typecheck + build；ruff/mypy 通过
 - 迁移链 head：`20260803_0023`（`vm_xml_history`）
 
@@ -16,6 +20,8 @@
 
 | 日期 | 命令 | 结果 | 范围 |
 |---|---|---|---|
+| 2026-08-10 | 存储卷过滤与使用状态 | PASS；后端 465 tests + ruff/mypy；前端 typecheck + 24 tests + build；备份 `nexora-20260810T163123Z.tar.gz`；healthy、live 200、quick_check ok；agent-browser 验证 openwrt.xml 不显示、qcow2 使用中、iso/img 未使用、1280/375px 无溢出 | 存储卷展示 |
+| 2026-08-10 | 存储节点维度部署验证 | PASS；前端 23 tests + typecheck + build；备份 `nexora-20260810T160240Z.tar.gz`；healthy、live/ready 200、quick_check ok；agent-browser 验证 kvm3 筛选与创建表单联动、全部节点恢复、1280/375px 无溢出 | 存储节点维度 |
 | 2026-08-07 | 移除登录限流定向 | PASS；认证相关 24 tests（auth service + auth flow + frontend security + session + navigation）；Ruff 通过 | 限流移除/审计保留 |
 | 2026-08-07 | 前端审计整改 | PASS；21 tests + typecheck + `npm run build`；14 处表格响应式、Alert title、按钮统一、共享 FactCard/format | 视觉/联动整改 |
 | 2026-08-07 | 重新部署生产 | PASS；镜像 `nexora:noratelimit-20260807T154034Z`，healthy、0.0.0.0:8002、非 privileged、无 Node/npm；登录实测 HTTP 303 成功 | 单容器/登录 |

@@ -9,34 +9,42 @@ import type {
 
 export function StorageCreatePanel({
   storage,
+  selectedHostId,
   loading,
   error,
   onPoolPreview,
   onVolumePreview,
 }: {
   storage: StorageOverview;
+  selectedHostId: string;
   loading: boolean;
   error: string | null;
   onPoolPreview: (request: StoragePoolCreateRequest) => void;
   onVolumePreview: (request: StorageVolumeCreateRequest) => void;
 }) {
+  const isAll = selectedHostId === ALL_HOSTS;
+  const poolsForHost = isAll ? storage.pools : storage.pools.filter((item) => item.host_id === selectedHostId);
   return (
     <Card title="创建资源">
       {error && <Alert className="nx-section-alert" type="error" showIcon title="无法检查存储配置" description={error} />}
       <Tabs items={[
-        { key: "pool", label: "存储池", children: <PoolForm hosts={storage.hosts} loading={loading} onSubmit={onPoolPreview} /> },
-        { key: "volume", label: "存储卷", children: <VolumeForm pools={storage.pools.filter((item) => item.writable && item.active)} loading={loading} onSubmit={onVolumePreview} /> },
+        { key: "pool", label: "存储池", children: <PoolForm hosts={storage.hosts} selectedHostId={isAll ? undefined : selectedHostId} loading={loading} onSubmit={onPoolPreview} /> },
+        { key: "volume", label: "存储卷", children: <VolumeForm pools={poolsForHost.filter((item) => item.writable && item.active)} loading={loading} onSubmit={onVolumePreview} /> },
       ]} />
     </Card>
   );
 }
 
+const ALL_HOSTS = "__all__";
+
 function PoolForm({
   hosts,
+  selectedHostId,
   loading,
   onSubmit,
 }: {
   hosts: StorageOverview["hosts"];
+  selectedHostId: string | undefined;
   loading: boolean;
   onSubmit: (request: StoragePoolCreateRequest) => void;
 }) {
@@ -60,8 +68,8 @@ function PoolForm({
       })}
     >
       <div className="nx-form-grid">
-        <Form.Item label="节点" name="host_id" rules={[{ required: true }]}>
-          <Select placeholder="选择已就绪节点" options={hosts.map((item) => ({ value: item.id, label: item.name }))} />
+        <Form.Item label="节点" name="host_id" rules={[{ required: true }]} initialValue={selectedHostId}>
+          <Select placeholder="选择已就绪节点" disabled={Boolean(selectedHostId)} options={hosts.map((item) => ({ value: item.id, label: item.name }))} />
         </Form.Item>
         <Form.Item label="名称" name="name" rules={[{ required: true, max: 128 }]}><Input /></Form.Item>
         <Form.Item label="类型" name="pool_type"><Select onChange={setPoolType} options={[{ value: "dir", label: "本地目录" }, { value: "netfs", label: "NFS netfs" }]} /></Form.Item>
