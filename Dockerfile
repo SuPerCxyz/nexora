@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM ghcr.io/astral-sh/uv:0.11.26 AS uv
-
-FROM node:22-bookworm-slim AS legacy-frontend
+FROM node:22-bookworm-slim AS frontend
 
 WORKDIR /app
 
@@ -10,9 +8,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY scripts/build-assets.mjs ./scripts/build-assets.mjs
+COPY static/nexora-icon.svg ./static/nexora-icon.svg
 RUN npm run build:assets
-
-FROM node:22-bookworm-slim AS react-frontend
 
 WORKDIR /app/frontend
 
@@ -22,7 +19,7 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-FROM python:3.12-slim-bookworm AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -30,7 +27,6 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-COPY --from=uv /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock README.md LICENSE ./
 RUN uv sync --frozen --no-dev --no-install-project
 
@@ -68,8 +64,8 @@ COPY --chown=nexora:nexora src ./src
 COPY --chown=nexora:nexora alembic ./alembic
 COPY --chown=nexora:nexora alembic.ini ./
 COPY --chown=nexora:nexora static ./static
-COPY --from=legacy-frontend --chown=nexora:nexora /app/static/vendor ./static/vendor
-COPY --from=react-frontend --chown=nexora:nexora /app/static/app ./static/app
+COPY --from=frontend --chown=nexora:nexora /app/static/vendor ./static/vendor
+COPY --from=frontend --chown=nexora:nexora /app/static/app ./static/app
 COPY --chown=nexora:nexora templates ./templates
 COPY --chmod=0755 scripts/entrypoint.sh /usr/local/bin/nexora-entrypoint
 

@@ -27,6 +27,9 @@ export async function internalRequest<T>(path: string, init: RequestInit = {}): 
   if (!new Set(["GET", "HEAD", "OPTIONS"]).has(method)) {
     if (!csrfToken) throw new Error("CSRF token is unavailable");
     headers.set("X-CSRF-Token", csrfToken);
+    if (init.body !== undefined && init.body !== null && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
   }
   const response = await fetch(path, {
     ...init,

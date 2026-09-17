@@ -61,5 +61,5 @@ export function StatusTag({
 }) {
   const tag = <Tag className={`nx-status-tag nx-status-${tone}`}>{label}</Tag>;
   if (!description) return tag;
-  return <Tooltip title={description}><span>{tag}</span></Tooltip>;
+  return <Tooltip title={description}><span style={{ display: "inline-flex" }}>{tag}</span></Tooltip>;
 }

@@ -57,13 +57,13 @@ def test_update_account_changes_credentials_and_version(auth_service: AuthServic
     administrator = auth_service.update_account(
         current_password="a-valid-password",
         username="operator",
-        new_password="a-new-valid-password",
-        confirmation="a-new-valid-password",
+        new_password="newpass8",
+        confirmation="newpass8",
     )
 
     assert "operator" == administrator.username
     assert 2 == administrator.session_version
-    assert auth_service.authenticate("operator", "a-new-valid-password", "127.0.0.1") is True
+    assert auth_service.authenticate("operator", "newpass8", "127.0.0.1") is True
     assert auth_service.authenticate("admin", "a-valid-password", "127.0.0.2") is False
 
 

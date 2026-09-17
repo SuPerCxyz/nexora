@@ -4,8 +4,31 @@
 
 ## Unreleased
 
+### Deployment
+
+- 2026-09-16：当前工作区版本完成生产单容器部署，镜像为
+  `sha256:01fcfc60...ef73c74`；升级前备份为
+  `nexora-20260916T114820Z.tar.gz`，旧镜像回滚标签为
+  `nexora:rollback-deploy-20260916T114718Z`。
+- 2026-09-16：管理员密码最低长度调整版本完成生产单容器部署，镜像为
+  `sha256:422a03e3...c396a41`；升级前备份为
+  `nexora-20260916T122546Z.tar.gz`，旧镜像回滚标签为
+  `nexora:rollback-password-policy-20260916T122506Z`。
+
+### Security
+
+- 管理员初始化和账户改密的最低密码长度从 12 个字符调整为 8 个字符；保留当前密码
+  验证、Argon2 哈希、Session 撤销、CSRF 和登录审计机制。
+
 ### Added
 
+- 增加全站 Light/Dark Theme 切换与浏览器持久化，Ant Design、CSS 语义 Token、
+  网络拓扑、代码区和弹层同步换肤；`/ui-preview` 增加长文本、Loading、Empty、
+  Error、Partial、404 与长弹窗回归状态。
+
+- 全站图标统一替换为品牌图标：新增 `static/nexora-icon.svg`（C2PA 签名 SVG），
+  favicon 与 9 个 tabler 图标全部替换为该图标，前端 `NexoraIcon` 组件接入导航
+  菜单与卡片 `extra`，README 标题旁加入品牌图标；返回箭头与移动端汉堡菜单保留。
 - 存储卷展示过滤与使用状态：libvirt 会把普通文件（如 `openwrt.xml`）探测成 raw，
   现新增 `is_display_volume`（磁盘镜像 + 光驱 ISO 白名单）过滤非存储卷实体；卷状态
   由"已纳管/只读"改为基于 VM 磁盘引用的"使用中/未使用"，只读卷保留只读提示与
@@ -16,6 +39,17 @@
 
 ### Fixed
 
+- 完成全站深度视觉 QA：公共 Header、Card、Table、Select、Dropdown、Tooltip、
+  Drawer、Modal 的文本、滚动与视口边界规则统一；技术 ID 改为单行省略并可查看
+  完整值，数值单位禁止拆行，Light 状态 Tag 对比度提升到至少 5.3:1。
+- 修复移动端镜像页仍渲染桌面表格并裁剪操作的问题，改为专用媒体 Card；修复节点/
+  VM 列表移动端遗留空 Card，以及 `/manage/hosts/:host/vms/:vm/config` 深链接返回
+  JSON 404。
+
+- 修复左上角 Logo 与“Nexora”字标比例不协调及旧素材带白底的问题：改用用户提供的
+  845×621 透明 PNG，图片只固定高度并按原始宽高比自适应宽度；桌面与移动端分别
+  调整 Logo、字标和间距，登录页继续复用同一品牌组件。favicon、导航语义图标和
+  页面结构保持不变。
 - 移除登录限流：删除失败次数锁定（`MAXIMUM_FAILURES`/`LOGIN_WINDOW`/
   `LoginRateLimitedError`/`_failure_count`）与登录 429 分支，连续输错密码不再被
   临时锁定；登录历史审计记录（`LoginAttempt`）继续保留。

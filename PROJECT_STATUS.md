@@ -11,6 +11,66 @@ P9：React 零旧前端与 VM 操作闭环。
 
 ## Current Task
 
+2026-09-16 更新：通过 Nexora 页面完成三台节点移除。`kvm3` 与 `test` 使用
+`clean_temporary` 模式，三步任务均成功，预览和执行的 Nexora 临时路径及 transient
+unit 均为 0；`ubuntu2604-kvm` 因 Host Key 不可信改用用户确认的 `local_only` 模式，
+三步任务成功。本地 `hosts`、凭据、Host Key、能力和资源索引均已无三台节点记录，页面
+节点列表为空，SQLite `quick_check` 为 ok。按设计保留移除计划、审计 tombstone、任务、
+远端命令日志和历史指标；Ubuntu 的远端临时实体未连接验证或清理，不能宣称远端零残留。
+
+2026-09-16 更新：管理员密码最低长度从 12 调整为 8 个字符，后端、React 初始化/账户
+页面、认证测试和安全文档已同步。新镜像
+`sha256:422a03e33478b7f5cd0fec0de96590d99ae1d70696a61f2182633e805c396a41` 已部署生产；
+升级前备份 `/data/backups/nexora-20260916T122546Z.tar.gz`，旧镜像回滚标签
+`nexora:rollback-password-policy-20260916T122506Z`。运行时已验证策略为 8，容器 healthy、
+`/live` 与 `/ready` 为 200、SQLite `quick_check` 为 ok，UID/GID `10001:10001`、非
+privileged、无设备映射且无 Node.js。已有管理员密码未自动修改；三台节点删除仍等待
+管理员通过安全登录态进入页面执行。
+
+2026-09-16 更新：将当前工作区最新版本（包含 `frontend-visual-quality-audit` 的
+Light/Dark Theme、响应式布局、浮层边界、媒体移动 Card、技术字段省略及配置深链接
+修复）构建并部署到生产单容器。新镜像为
+`sha256:01fcfc60f4ad8d5401ae6706fed770b83fb7a1a179f65a629199b8cc6ef73c74`；升级前备份
+`/data/backups/nexora-20260916T114820Z.tar.gz`，旧镜像回滚标签
+`nexora:rollback-deploy-20260916T114718Z`。容器 `nexora` 当前 healthy，监听
+`0.0.0.0:8002`，`/live` 与 `/ready` 均为 200，SQLite `quick_check` 为 ok，运行用户
+为 UID/GID `10001:10001`，非 privileged、无设备映射且无 Node.js。未 commit、未 push；
+当前部署以工作区快照为版本标识。
+
+2026-08-13 更新：完成 `frontend-visual-quality-audit` 全站视觉 QA。新增浏览器持久化
+Light/Dark Theme，并统一 Ant Design、CSS 语义 Token、网络拓扑和浮层主题；修复移动
+媒体表格裁剪、Host/VM 移动空 Card、技术 ID 异常换行、数值单位拆行、Header Flex、
+Modal/Drawer/Dropdown/Select 视口边界，以及 `/manage/hosts/:host/vms/:vm/config`
+React Shell 深链接。`/ui-preview` 补齐 Long Text、Partial、Loading、Empty、Error、404
+和长弹窗状态。隔离生产数据快照（后台任务/指标采样禁用）完成 25 路由在 10 个 Light
+视口及 Dark 桌面/移动回归，最终无 Body 溢出、破图、原始 JSON 404、Console/Page
+Error；移动 `/media` 在 430/390/360 的双主题均为 overflow 0。前端 26 tests、
+typecheck、build、npm audit（0 vulnerabilities）、React Shell 7 tests、Ruff 与 diff check
+通过。OpenSpec artifact 位于 `openspec/changes/frontend-visual-quality-audit/`。QA 完成时尚未
+部署，后于 2026-09-16 完成生产部署；未 commit、未 push；恢复入口为该 change 的
+`qa-matrix.md` 与 `tasks.md`。
+
+2026-08-12 更新：网页品牌区比例修复——新增用户提供的透明 PNG
+`static/nexora-logo.png`（845×621），`NexoraIcon` 改用该资产并仅设置高度、宽度按
+原始比例自适应；顶部品牌区桌面端使用 30px Logo / 28px 字标 / 8px 间距，移动端
+使用 26px / 24px / 8px，登录页继续复用同一组件，README 同步引用新资产。保留既有
+favicon、导航语义图标与页面结构。前端 24 个测试、typecheck、构建与
+`tests/web/test_react_shell.py` 7 个用例通过；1280/375px Browser QA 确认透明背景、
+无固定宽度、无横向溢出或页面错误。已部署生产镜像
+`sha256:215f5ce01cea943f3a79f780b975e2060ae15d659fa930c7eafa539957c710c3`；部署前备份
+`/data/backups/nexora-20260812T154352Z.tar.gz`，旧镜像回滚标签
+`nexora:rollback-logo-20260812T154340Z`。生产 healthy、live/ready 200、SQLite
+`quick_check` ok、revision `20260803_0023`，登录页 1280/375px 无溢出或页面错误。
+
+2026-08-12 更新：全站图标统一替换为品牌图标——新增 `static/nexora-icon.svg`（C2PA
+签名 SVG，源文件 `~/tmp/nexora_logo.svg`），`static/favicon.svg` 与
+`static/vendor/tabler/icons/*.svg`（9 个）全部替换为该图标，`scripts/build-assets.mjs`
+同步改为从 `static/nexora-icon.svg` 复制；前端新增 `NexoraIcon` 组件，导航菜单 9 项与
+卡片 `extra` 图标替换为新图标，返回箭头（`ArrowLeftOutlined`）与移动端汉堡菜单
+（`MenuOutlined`）保留；`App.test.tsx` 图标断言改为按 `src` 查询，README 标题旁加入
+品牌图标。typecheck、前端 24 个测试、`tests/web/test_react_shell.py` 7 个用例与
+前端构建全部通过。
+
 2026-08-10 更新：存储卷展示修正——过滤 libvirt 误标 raw 的普通文件（如 openwrt.xml），
 仅展示磁盘镜像与光驱 ISO；卷状态由"已纳管/只读"改为基于 VM 引用的"使用中/未使用"，
 只读卷仍保留只读提示与操作禁用。重新构建部署生产，回滚镜像
@@ -439,6 +499,18 @@ worker/Tunnel/Session 零残留。PyPI websockify 因传递 Redis 依赖被拒�
 
 ## Tests Run
 
+- 2026-08-12 品牌区比例与透明 Logo：`npm test` PASS，24 tests；
+  `npm run typecheck`、`npm run build` PASS；
+  `.venv/bin/pytest -q tests/web/test_react_shell.py` PASS，7 tests；agent-browser
+  1280/375px PASS，Logo 实测 40.81×30 / 35.38×26，无 `width` 属性、横向溢出或
+  页面错误。
+- 2026-08-12 品牌 Logo 生产部署：旧镜像标记
+  `nexora:rollback-logo-20260812T154340Z`，一致备份
+  `/data/backups/nexora-20260812T154352Z.tar.gz`；新镜像 `sha256:215f5ce0...710c3`
+  healthy，live/ready 200，SQLite quick_check ok，revision `20260803_0023`，UID/GID
+  10001、非 privileged、运行时无 Node/npm；生产 Logo HTTP 200 且 SHA-256 与源码
+  一致，登录页 1280/375px 无溢出或页面错误。首次构建因只读 Buildx activity 目录
+  在构建前失败，旧镜像立即恢复 healthy；改用隔离可写 Docker config 后构建成功。
 - 2026-08-10 存储卷过滤与使用状态：后端 `uv run pytest -q` PASS，465 passed、
   25 skipped；ruff/mypy PASS；前端 typecheck + 24 tests + build PASS。
 - 2026-08-10 存储卷过滤部署：备份 `/data/backups/nexora-20260810T163123Z.tar.gz`；
@@ -723,11 +795,11 @@ CIDR/gateway/DNS；恢复扩容必须同时验证目标 virtual size 与持久�
 
 ## Updated At
 
-2026-08-07 Asia/Shanghai
+2026-09-16 Asia/Shanghai
 
 ## Updated By
 
-OpenCode
+Codex
 
 > 2026-08-07 移除登录限流：删除 `MAXIMUM_FAILURES`/`LOGIN_WINDOW`/`LoginRateLimitedError`/
 > `_failure_count`，`authenticate()` 不再因连续失败拒绝登录（保留 `LoginAttempt` 审计

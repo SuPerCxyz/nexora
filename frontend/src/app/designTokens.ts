@@ -19,3 +19,25 @@ export const designTokens = {
   textLink: "#4F8EF7",
   white: "#FFFFFF",
 } as const;
+
+export const darkDesignTokens: { [Key in keyof typeof designTokens]: string } = {
+  primary: "#78A9FF",
+  success: "#4ADE80",
+  warning: "#FBBF24",
+  danger: "#F87171",
+  info: "#22D3EE",
+  special: "#A78BFA",
+  neutral: "#94A3B8",
+  backgroundApp: "#0B1120",
+  backgroundCard: "#111827",
+  backgroundHover: "#1E293B",
+  backgroundSelected: "#1D3557",
+  border: "#334155",
+  neutral400: "#64748B",
+  textPrimary: "#F8FAFC",
+  textSecondary: "#CBD5E1",
+  textTertiary: "#94A3B8",
+  textDisabled: "#64748B",
+  textLink: "#78A9FF",
+  white: "#FFFFFF",
+};

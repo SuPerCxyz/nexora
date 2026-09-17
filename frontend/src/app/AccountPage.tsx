@@ -44,7 +44,7 @@ export function AccountPage() {
       <Form form={form} layout="vertical" requiredMark={false} className="nx-form-narrow">
         <Form.Item name="username" label="用户名" rules={[{ required: true }, { pattern: /^[A-Za-z0-9_.-]{3,64}$/, message: "请输入 3-64 位合法用户名" }]}><Input autoComplete="username" /></Form.Item>
         <Form.Item name="current_password" label="当前密码" rules={[{ required: true }]}><Input.Password autoComplete="current-password" /></Form.Item>
-        <Form.Item name="new_password" label="新密码" extra="留空表示不修改密码" rules={[{ min: 12, message: "新密码至少 12 位" }]}><Input.Password autoComplete="new-password" /></Form.Item>
+        <Form.Item name="new_password" label="新密码" extra="留空表示不修改密码" rules={[{ min: 8, message: "新密码至少 8 位" }]}><Input.Password autoComplete="new-password" /></Form.Item>
         <Form.Item name="confirmation" label="确认新密码" dependencies={["new_password"]} rules={[({ getFieldValue }) => ({ validator(_, value) { return !getFieldValue("new_password") || value === getFieldValue("new_password") ? Promise.resolve() : Promise.reject(new Error("两次密码不一致")); } })]}><Input.Password autoComplete="new-password" /></Form.Item>
         <div className="nx-settings-grid">
           <Form.Item name="session_timeout_minutes" label="Session 超时（分钟）" rules={[{ required: true }]}><InputNumber min={5} max={1440} className="nx-full-width" /></Form.Item>
@@ -63,8 +63,8 @@ function isFormValidationError(value: unknown): boolean {
 }
 
 const historyColumns: ColumnsType<LoginAttempt> = [
-  { title: "时间", dataIndex: "occurred_at", render: (value: string) => formatDateTime(value, { dateStyle: "short", timeStyle: "medium" }) },
-  { title: "用户名", dataIndex: "username" },
-  { title: "来源", dataIndex: "remote_address", render: (value: string) => <span className="nx-technical">{value}</span> },
-  { title: "结果", dataIndex: "succeeded", render: (value: boolean) => <StatusTag label={value ? "成功" : "失败"} tone={value ? "running" : "error"} /> },
+  { title: "时间", dataIndex: "occurred_at", render: (value: string) => <span className="nx-number-unit">{formatDateTime(value, { dateStyle: "short", timeStyle: "medium" })}</span> },
+  { title: "用户名", dataIndex: "username", responsive: ["md"] },
+  { title: "来源", dataIndex: "remote_address", responsive: ["sm"], render: (value: string) => <span className="nx-technical">{value}</span> },
+  { title: "结果", dataIndex: "succeeded", width: 100, render: (value: boolean) => <StatusTag label={value ? "成功" : "失败"} tone={value ? "running" : "error"} /> },
 ];

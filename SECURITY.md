@@ -46,6 +46,7 @@
 ## 凭据
 
 - 使用 AES-256-GCM 或 ChaCha20-Poly1305 等 AEAD。
+- 管理员初始化和改密要求密码长度为 8 至 1,024 个字符；该长度门槛是产品约束，生产环境仍应使用不可预测的长密码。
 - 每条记录使用随机 nonce，AAD 绑定 host、credential ID 和 schema version。
 - `NEXORA_SECRET_KEY` 与 `NEXORA_CREDENTIAL_KEY` 独立。
 - 密文保存 key version，支持分批重加密和可恢复轮换。

@@ -26,6 +26,7 @@ def test_unknown_user_uses_dummy_verification_path() -> None:
     ("password", "confirmation"),
     [
         ("short", "short"),
+        ("1234567", "1234567"),
         ("a-valid-password", "a-different-password"),
     ],
 )
@@ -39,5 +40,11 @@ def test_password_policy_rejects_invalid_input(
 
 def test_password_policy_accepts_matching_long_password() -> None:
     password = "a-valid-password"
+
+    validate_password(password, password)
+
+
+def test_password_policy_accepts_exact_minimum_length() -> None:
+    password = "12345678"
 
     validate_password(password, password)

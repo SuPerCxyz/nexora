@@ -24,15 +24,15 @@ export function StorageTables({
     { title: "类型", dataIndex: "pool_type", render: (value) => <code>{value}</code> },
     { title: "状态", render: (_, pool) => <PoolState pool={pool} /> },
     { title: "Target", dataIndex: "target_path", render: (value) => <code>{value ?? "—"}</code> },
-    { title: "可用容量", dataIndex: "available_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
+    { title: "可用容量", dataIndex: "available_bytes", render: (v: number | null) => <span className="nx-number-unit">{formatBytes(v, { fixedUnit: "GiB" })}</span> },
     { title: "操作", width: 100, render: (_, pool) => pool.writable ? <PoolActions pool={pool} loading={loading} onLifecycle={onLifecycle} onDelete={() => onMutation(pool.resource_id, "pool_delete")} /> : <Typography.Text type="secondary">只读</Typography.Text> },
   ];
   const volumeColumns: ColumnsType<StorageVolumeSummary> = [
     { title: "存储卷", render: (_, volume) => <ResourceIdentity name={volume.name} identity={volume.resource_id} /> },
     { title: "节点 / Pool", render: (_, volume) => `${volume.host_name} / ${volume.pool_name}` },
     { title: "格式", dataIndex: "format", render: (value) => <code>{value ?? "—"}</code> },
-    { title: "容量", dataIndex: "capacity_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
-    { title: "分配", dataIndex: "allocation_bytes", render: (v: number | null) => formatBytes(v, { fixedUnit: "GiB" }) },
+    { title: "容量", dataIndex: "capacity_bytes", render: (v: number | null) => <span className="nx-number-unit">{formatBytes(v, { fixedUnit: "GiB" })}</span> },
+    { title: "分配", dataIndex: "allocation_bytes", render: (v: number | null) => <span className="nx-number-unit">{formatBytes(v, { fixedUnit: "GiB" })}</span> },
     { title: "状态", render: (_, volume) => <Flex gap={6} className="nx-inline-tags"><StatusTag label={volume.in_use ? "使用中" : "未使用"} tone={volume.in_use ? "running" : "stopped"} />{!volume.writable && <StatusTag label="只读" tone="unknown" />}</Flex> },
     { title: "操作", width: 100, render: (_, volume) => volume.writable ? <VolumeActions volume={volume} loading={loading} onMutation={onMutation} /> : <Typography.Text type="secondary">只读</Typography.Text> },
   ];

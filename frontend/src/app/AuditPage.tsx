@@ -52,7 +52,7 @@ const columns: ColumnsType<AuditItem> = [
   { title: "时间 / Operation", render: (_, item) => <div>{formatDateTime(item.occurred_at, { dateStyle: "short", timeStyle: "medium" })}<div className="nx-technical">{item.operation_id}</div></div> },
   { title: "节点", render: (_, item) => <div>{item.host_name}<div className="nx-technical">{item.host_id}</div></div> },
   { title: "命令摘要", dataIndex: "command_summary", render: (value: string) => <code className="nx-command-summary">{value}</code> },
-  { title: "结果", render: (_, item) => <div><StatusTag label={outcomeLabel(item.outcome)} tone={item.outcome === "succeeded" ? "running" : item.outcome === "timed_out" ? "warning" : "error"} /><div className="nx-technical">exit={item.exit_code}</div></div> },
+  { title: "结果", width: 120, render: (_, item) => <div><StatusTag label={outcomeLabel(item.outcome)} tone={item.outcome === "succeeded" ? "running" : item.outcome === "timed_out" ? "warning" : "error"} /><div className="nx-technical">exit={item.exit_code}</div></div> },
 ];
 
 function AuditOutput(item: AuditItem) {

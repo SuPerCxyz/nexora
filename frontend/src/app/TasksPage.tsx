@@ -141,9 +141,9 @@ function TaskStatus({ value }: { value: string }) {
 }
 
 const taskColumns: ColumnsType<TaskSummary> = [
-  { title: "任务", dataIndex: "title", render: (value: string, task) => <div><a href={`/tasks/${task.id}`}>{value}</a><div className="nx-technical">{task.id}</div></div> },
-  { title: "状态", dataIndex: "status", width: 96, render: (value: string) => <TaskStatus value={value} /> },
-  { title: "进度", dataIndex: "progress", render: (value: number) => <Progress percent={Math.round(value)} size="small" /> },
+  { title: "任务", dataIndex: "title", render: (value: string, task) => <div><a href={`/tasks/${task.id}`}>{value}</a><div className="nx-technical">{task.id}</div><small className="nx-mobile-table-detail">进度 {Math.round(task.progress)}%</small></div> },
+  { title: "状态", dataIndex: "status", width: 110, render: (value: string) => <TaskStatus value={value} /> },
+  { title: "进度", dataIndex: "progress", responsive: ["md"], render: (value: number) => <Progress percent={Math.round(value)} size="small" /> },
   { title: "步骤", width: 80, responsive: ["md"], render: (_, task) => `${task.current_step} / ${task.total_steps}` },
   { title: "创建时间", dataIndex: "created_at", width: 180, responsive: ["lg"], render: formatDate },
 ];
@@ -151,7 +151,7 @@ const taskColumns: ColumnsType<TaskSummary> = [
 const stepColumns: ColumnsType<TaskStepSummary> = [
   { title: "#", dataIndex: "sequence", width: 64, responsive: ["md"] },
   { title: "名称", dataIndex: "name" },
-  { title: "状态", dataIndex: "status", width: 96, render: (value: string) => <TaskStatus value={value} /> },
+  { title: "状态", dataIndex: "status", width: 110, render: (value: string) => <TaskStatus value={value} /> },
   { title: "尝试", dataIndex: "attempt_count", width: 72, responsive: ["md"] },
   { title: "开始", dataIndex: "started_at", width: 180, responsive: ["lg"], render: formatDate },
   { title: "结束", dataIndex: "finished_at", width: 180, responsive: ["lg"], render: formatDate },

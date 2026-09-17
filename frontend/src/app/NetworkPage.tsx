@@ -79,7 +79,7 @@ export function NetworkPage() {
 const nodeColumns: ColumnsType<NetworkNode> = [
   { title: "名称", dataIndex: "label", render: (value: string, node) => <div><strong className="nx-technical">{value}</strong><small className="nx-mobile-table-detail">{nodeTypeInfo(node.node_type).label}</small></div> },
   { title: "类型", width: 150, responsive: ["md"], render: (_, node) => <TaggedText info={nodeTypeInfo(node.node_type)} /> },
-  { title: "状态", dataIndex: "status", width: 120, responsive: ["md"], render: (value: string) => <NetworkStatusTag status={value} /> },
+  { title: "状态", dataIndex: "status", width: 130, responsive: ["md"], render: (value: string) => <NetworkStatusTag status={value} /> },
   { title: "标记", width: 260, responsive: ["lg"], render: (_, node) => <Space wrap>{node.management && <TaggedText info={managementInfo} tone="warning" />}{node.default_route && <TaggedText info={defaultRouteInfo} tone="running" />}{node.warnings.map((warning) => <TaggedText key={warning} info={warningInfo(warning)} tone="warning" />)}</Space> },
 ];
 

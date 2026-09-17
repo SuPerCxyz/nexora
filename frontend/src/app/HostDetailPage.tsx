@@ -161,10 +161,10 @@ function HostMetrics({ data }: { data: HostDetail }) {
 const vmColumns: ColumnsType<VmSummary> = [
   {
     title: "虚拟机",
-    render: (_, vm) => <div><a className="nx-resource-link" href={`/hosts/${vm.host_id}/vms/${vm.native_id}`}>{vm.name}</a><small className="nx-technical">{vm.native_id}</small></div>,
+    render: (_, vm) => <div><a className="nx-resource-link" href={`/hosts/${vm.host_id}/vms/${vm.native_id}`}>{vm.name}</a><small className="nx-technical">{vm.native_id}</small><small className="nx-mobile-table-detail">{vm.vcpus ?? "—"} vCPU · {vm.memory_mib ?? "—"} MiB</small></div>,
   },
   { title: "状态", dataIndex: "state", render: (state: string, vm) => <Space size={6} wrap><VmStatusTag state={state} />{vm.needs_restart && <StatusTag label="待重启" tone="warning" description="配置已修改，重启虚拟机后生效" />}</Space> },
-  { title: "配置", render: (_, vm) => `${vm.vcpus ?? "—"} vCPU · ${vm.memory_mib ?? "—"} MiB` },
+  { title: "配置", responsive: ["md"], render: (_, vm) => <span className="nx-number-unit">{vm.vcpus ?? "—"} vCPU · {vm.memory_mib ?? "—"} MiB</span> },
 ];
 
 const adapterColumns: ColumnsType<HostNetworkAdapterSummary> = [

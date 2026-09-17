@@ -32,6 +32,9 @@ const overview = {
 
 beforeEach(() => {
   window.history.replaceState({}, "", "/");
+  window.localStorage.clear();
+  document.documentElement.removeAttribute("data-theme");
+  document.documentElement.style.removeProperty("color-scheme");
 });
 
 afterEach(() => {
@@ -49,8 +52,49 @@ describe("Ant Design core application", () => {
     expect(screen.getByText("2 / 3")).toBeInTheDocument();
     expect(screen.getByText("子系统状态")).toBeInTheDocument();
     expect(document.documentElement.lang).toBe("zh-CN");
-    expect(screen.getByRole("img", { name: "cloud-server" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "file-image" })).toBeInTheDocument();
+    const brandLogo = document.querySelector<HTMLImageElement>('img[src="/static/nexora-logo.png"]');
+    expect(brandLogo).not.toBeNull();
+    expect(brandLogo).toHaveAttribute("height", "30");
+    expect(brandLogo).not.toHaveAttribute("width");
+  });
+
+  it("persists an accessible light and dark theme selection", async () => {
+    stubApi({ "/internal/overview": overview });
+    render(<App nonce="test-nonce" />);
+    await screen.findByRole("heading", { name: "总览" });
+
+    fireEvent.click(screen.getByRole("button", { name: "切换到深色主题" }));
+    await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
+    expect(window.localStorage.getItem("nexora-theme")).toBe("dark");
+    expect(screen.getByRole("button", { name: "切换到浅色主题" })).toBeInTheDocument();
+  });
+
+  it("renders media actions in desktop and mobile content structures", async () => {
+    window.history.replaceState({}, "", "/media");
+    stubApi({
+      "/internal/media": {
+        active_task_id: null,
+        items: [{
+          id: "media-1",
+          relative_path: "images/a-very-long-platform-image-name-for-responsive-validation.qcow2",
+          file_name: "a-very-long-platform-image-name-for-responsive-validation.qcow2",
+          kind: "disk",
+          status: "available",
+          size_bytes: 10737418240,
+          sha256: "a".repeat(64),
+          image_format: "qcow2",
+          classification: "Linux",
+          architecture: "x86_64",
+          standalone: true,
+        }],
+      },
+    });
+    render(<App nonce="test-nonce" />);
+
+    expect(await screen.findByRole("heading", { name: "平台媒体库" })).toBeInTheDocument();
+    expect(document.querySelector(".nx-desktop-table .ant-table")).not.toBeNull();
+    expect(document.querySelector(".nx-mobile-list .nx-media-card")).not.toBeNull();
+    expect(screen.getAllByRole("link", { name: "创建虚拟机" })).toHaveLength(2);
   });
 
   it("uses fixed interface typography and density preferences", async () => {

@@ -12,15 +12,17 @@ import {
   AppstoreOutlined,
   CloudServerOutlined,
   DatabaseOutlined,
-  DesktopOutlined,
   DeploymentUnitOutlined,
+  DesktopOutlined,
   FileImageOutlined,
   MenuOutlined,
-  SettingOutlined,
+  MoonOutlined,
   SafetyCertificateOutlined,
+  SettingOutlined,
+  SunOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import type { InternalSession } from "../api/contracts";
 import { loadSession } from "../api/session";
@@ -44,7 +46,9 @@ import { AuditPage } from "./AuditPage";
 import { AccountPage } from "./AccountPage";
 import { AuthPage } from "./AuthPage";
 import { configureTimeZone } from "./dateTime";
-import { nexoraTheme } from "./theme";
+import { NexoraIcon } from "./NexoraIcon";
+import { createNexoraTheme, resolveThemeMode, THEME_STORAGE_KEY } from "./theme";
+import type { ThemeMode } from "./theme";
 import "./styles.css";
 
 const corePaths = new Set(["/", "/hosts", "/vms", "/storage", "/media", "/networks", "/tasks", "/audit", "/settings/account"]);
@@ -70,6 +74,14 @@ export function App({ nonce }: AppProps) {
   const [error, setError] = useState<Error | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [path, setPath] = useState(window.location.pathname);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(resolveThemeMode);
+  const theme = useMemo(() => createNexoraTheme(themeMode), [themeMode]);
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = themeMode;
+    document.documentElement.style.colorScheme = themeMode;
+    try { window.localStorage.setItem(THEME_STORAGE_KEY, themeMode); } catch { /* Storage is optional. */ }
+  }, [themeMode]);
 
   useEffect(() => {
     if (authMode) return;
@@ -101,21 +113,22 @@ export function App({ nonce }: AppProps) {
     [selectedPath],
   );
 
-  if (authMode) return <ConfigProvider theme={nexoraTheme} csp={{ nonce }}><AntApp><AuthPage mode={authMode} error={authError} csrf={authCsrf} /></AntApp></ConfigProvider>;
+  if (authMode) return <ConfigProvider theme={theme} csp={{ nonce }}><AntApp><div className="nx-auth-theme-control"><ThemeToggle mode={themeMode} onChange={setThemeMode} /></div><AuthPage mode={authMode} error={authError} csrf={authCsrf} /></AntApp></ConfigProvider>;
 
   return (
-    <ConfigProvider theme={nexoraTheme} csp={{ nonce }}>
+    <ConfigProvider theme={theme} csp={{ nonce }}>
       <AntApp>
         <Layout className="nx-app-shell">
           <header className="nx-topbar">
             <button className="nx-brand-button" onClick={() => navigate("/", setPath, setDrawerOpen)}>
-              <Typography.Title level={2} className="nx-brand">Nexora</Typography.Title>
+              <span className="nx-brand-row"><NexoraIcon size={30} /><Typography.Title level={2} className="nx-brand">Nexora</Typography.Title></span>
             </button>
             <nav className="nx-desktop-nav" aria-label="主导航">{menu}</nav>
             <Button className="nx-mobile-menu" type="text" icon={<MenuOutlined />} aria-label="打开主导航" onClick={() => setDrawerOpen(true)} />
+            <ThemeToggle mode={themeMode} onChange={setThemeMode} />
             <a className="nx-account" href="/settings/account">{session?.administrator.username ?? "管理员"}</a>
           </header>
-          <Drawer title="Nexora" placement="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          <Drawer title="Nexora" placement="left" width="min(320px, calc(100vw - 24px))" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
             <Menu mode="inline" selectedKeys={[selectedPath]} items={navigation} onClick={({ key }) => navigate(key, setPath, setDrawerOpen)} />
           </Drawer>
           <Layout.Content className="nx-content">
@@ -125,6 +138,12 @@ export function App({ nonce }: AppProps) {
       </AntApp>
     </ConfigProvider>
   );
+}
+
+function ThemeToggle({ mode, onChange }: { mode: ThemeMode; onChange: (mode: ThemeMode) => void }) {
+  const nextMode = mode === "light" ? "dark" : "light";
+  const label = nextMode === "dark" ? "切换到深色主题" : "切换到浅色主题";
+  return <Button className="nx-theme-toggle" type="text" icon={mode === "light" ? <MoonOutlined /> : <SunOutlined />} aria-label={label} title={label} onClick={() => onChange(nextMode)} />;
 }
 
 function CurrentPage({ path }: { path: string }) {

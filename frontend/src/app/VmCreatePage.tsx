@@ -344,7 +344,7 @@ export function VmCreatePage({ initialMode }: { initialMode?: DiskSource }) {
 
             <DiskSourceCard options={options} mode={mode} hostId={hostId} />
 
-            <Card title="启动与安全" extra={<SafetyCertificateOutlined />}>
+            <Card title="启动与安全" extra={<CloudServerOutlined />}>
               <Form.Item label="固件模式" name="firmware" tooltip="UEFI 与 Secure Boot 相互独立，可使用不启用安全启动的 UEFI。">
                 <Radio.Group>
                   <Radio.Button value="bios">BIOS</Radio.Button>

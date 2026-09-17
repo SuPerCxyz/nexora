@@ -82,9 +82,25 @@
 | NEW-11 | 移除登录限流 | DONE | NEW-10 | 2026-08-07；移除失败次数锁定与 429 分支，保留登录审计记录；SECURITY.md 同步 |
 | NEW-12 | 存储页面节点维度管理 | DONE | P8-015 | 2026-08-10；顶部节点选择器（默认全部节点），选定后池/卷表仅显示该节点资源，创建池节点自动带入选定节点，创建卷目标 Pool 仅列该节点 active managed 池；前端 23 tests + 部署验证 |
 | NEW-13 | 存储卷展示过滤与使用状态 | DONE | NEW-12 | 2026-08-10；过滤 libvirt 误标 raw 的普通文件（如 openwrt.xml），仅展示磁盘镜像与光驱 ISO（`is_display_volume`）；卷状态改为基于 VM 引用的"使用中/未使用"，只读卷保留只读提示；后端 465 tests + 部署验证 |
+| NEW-14 | 顶部品牌 Logo 比例与透明背景修复 | DONE | NEW-10 | 2026-08-12；改用用户提供的透明 PNG，Logo 仅固定高度、宽度按原始比例自适应；桌面/移动品牌字标比例与间距统一，前端 24 tests + 双断点 Browser QA + 生产部署验证 PASS |
+| NEW-15 | 全站深度视觉 QA 与双主题 | DONE | NEW-14 | 2026-09-16；Light/Dark 持久化、公共布局与弹层约束、移动媒体 Card、技术字段省略、兼容配置路由修复；25 路由×10 Light 视口 + Dark 桌面/移动回归、构建与生产部署 PASS，镜像 `sha256:01fcfc60...ef73c74` |
+| NEW-16 | 管理员密码最低长度调整 | DONE | NEW-15 | 2026-09-16；初始化与账户改密最低长度统一为 8，前后端测试与安全文档同步；认证测试 20、前端测试 26、构建/审计/部署验证 PASS，镜像 `sha256:422a03e3...c396a41` |
 
 P7 暂不包含 aarch64、Rocky 之外的 RHEL 系发行版、在线迁移、任意历史分支恢复、
 复杂 external/raw/block/network Snapshot 链及 Bond/OVS/VXLAN 写入。
+
+## 2026-09-16 E2E 缺口跟踪
+
+当前 `kvm2` 自动发现与主页面覆盖已完成，但本轮 Autonomous Web E2E 状态为
+`completed_with_gaps`，详见 `.e2e/final-report.md`。后续恢复入口按优先级为：
+
+1. DONE（2026-09-17）：修复并回归 FAIL-001；高级 Watchdog/vsock 表单从当前 XML 回填，且兼容
+   Watchdog model 不得在未明确选择时被删除。
+2. DONE（2026-09-17）：修复并回归 FAIL-002；账户表单校验拒绝留在表单显示字段错误。
+3. 准备明确隔离的关机 VM/存储夹具后，执行 VM 配置 apply → 刷新/重新进入 → XML/列表
+   校验 → rollback，以及创建/快照/克隆/删除完整生命周期。
+4. 准备可取消的长任务与 interrupted 任务夹具，补测任务取消和显式恢复；具备第二个
+   ready 节点后补测跨节点迁移。
 
 详细阶段范围以 `docs/product/SCOPE.md` 为准。开始任务时将对应行改为
 `ANALYZING` 或 `IN_PROGRESS`，结束时填写准确日期与结果。

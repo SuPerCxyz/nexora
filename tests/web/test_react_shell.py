@@ -90,6 +90,7 @@ def test_react_shell_owns_uuid_resource_details(settings: Settings) -> None:
         vm = client.get(f"/hosts/{host_id}/vms/{vm_id}")
         config = client.get(f"/hosts/{host_id}/vms/{vm_id}/config")
         legacy_config = client.get(f"/manage/hosts/{host_id}/vms/{vm_id}")
+        legacy_config_explicit = client.get(f"/manage/hosts/{host_id}/vms/{vm_id}/config")
 
     assert 200 == host.status_code
     assert 'id="nexora-root"' in host.text
@@ -101,6 +102,8 @@ def test_react_shell_owns_uuid_resource_details(settings: Settings) -> None:
     assert 'id="nexora-root"' in config.text
     assert 200 == legacy_config.status_code
     assert 'id="nexora-root"' in legacy_config.text
+    assert 200 == legacy_config_explicit.status_code
+    assert 'id="nexora-root"' in legacy_config_explicit.text
 
 
 def test_react_shell_fails_closed_without_assets(

@@ -46,7 +46,7 @@ const iconNames = [
 await mkdir(resolve(destination, "tabler", "icons"), { recursive: true });
 for (const name of iconNames) {
   await cp(
-    resolve(root, "node_modules", "@tabler", "icons", "icons", "outline", `${name}.svg`),
+    resolve(root, "static", "nexora-icon.svg"),
     resolve(destination, "tabler", "icons", `${name}.svg`)
   );
 }

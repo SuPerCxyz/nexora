@@ -30,7 +30,7 @@ export function HostsPage() {
         <Button type="primary" href="/hosts/new">添加节点</Button>
       </Flex>
       {data.total === 0 ? <Card><PageEmpty description="尚未添加节点" /></Card> : <>
-        <Card><Table className="nx-desktop-table" rowKey="id" columns={columns} dataSource={data.items} pagination={false} /></Card>
+        <Card className="nx-desktop-table"><Table rowKey="id" columns={columns} dataSource={data.items} pagination={false} /></Card>
         <div className="nx-mobile-list">{data.items.map((host) => <HostCard key={host.id} host={host} />)}</div>
         <Pagination current={page} pageSize={PAGE_SIZE} total={data.total} showSizeChanger={false} onChange={setPage} />
       </>}
@@ -41,7 +41,7 @@ export function HostsPage() {
 const columns: ColumnsType<HostSummary> = [
   { title: "节点", render: (_, host) => <ResourceLink href={`/hosts/${host.id}`} name={host.name} technical={host.id} /> },
   { title: "连接", render: (_, host) => <><span className="nx-technical">{host.address}</span><small>SSH {host.ssh_port}</small></> },
-  { title: "状态", dataIndex: "status", render: (status: string) => <HostStatusTag status={status} /> },
+  { title: "状态", dataIndex: "status", width: 120, render: (status: string) => <HostStatusTag status={status} /> },
   { title: "上次同步", dataIndex: "last_scanned_at", render: formatTime },
 ];
 

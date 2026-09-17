@@ -63,7 +63,7 @@ export function VmsPage() {
         </Flex>
       </Flex>
       {data.total === 0 ? <Card><PageEmpty description="没有匹配的虚拟机" /></Card> : <>
-        <Card><Table className="nx-desktop-table" rowKey="resource_id" columns={columns} dataSource={data.items} pagination={false} /></Card>
+        <Card className="nx-desktop-table"><Table rowKey="resource_id" columns={columns} dataSource={data.items} pagination={false} /></Card>
         <div className="nx-mobile-list">{data.items.map((vm) => <VmCard key={vm.resource_id} vm={vm} />)}</div>
         <Pagination current={page} pageSize={PAGE_SIZE} total={data.total} showSizeChanger={false} onChange={setPage} />
       </>}
@@ -73,13 +73,13 @@ export function VmsPage() {
 
 const columns: ColumnsType<VmSummary> = [
   { title: "虚拟机", render: (_, vm) => <VmLink vm={vm} /> },
-  { title: "状态", dataIndex: "state", render: (state: string, vm) => <RestartBadge state={state} needsRestart={vm.needs_restart} /> },
+  { title: "状态", dataIndex: "state", width: 130, render: (state: string, vm) => <RestartBadge state={state} needsRestart={vm.needs_restart} /> },
   { title: "节点", dataIndex: "host_name" },
-  { title: "配置", render: (_, vm) => `${vm.vcpus ?? "—"} vCPU · ${vm.memory_mib ?? "—"} MiB` },
+  { title: "配置", render: (_, vm) => <span className="nx-number-unit">{vm.vcpus ?? "—"} vCPU · {vm.memory_mib ?? "—"} MiB</span> },
 ];
 
 function VmCard({ vm }: { vm: VmSummary }) {
-  return <Card><Flex justify="space-between" align="start" gap={12}><VmLink vm={vm} /><VmStatusTag state={vm.state} /></Flex><div className="nx-card-facts"><span>{vm.host_name}</span><span>{vm.vcpus ?? "—"} vCPU · {vm.memory_mib ?? "—"} MiB</span></div></Card>;
+  return <Card><Flex justify="space-between" align="start" gap={12}><VmLink vm={vm} /><VmStatusTag state={vm.state} /></Flex><div className="nx-card-facts"><span>{vm.host_name}</span><span className="nx-number-unit">{vm.vcpus ?? "—"} vCPU · {vm.memory_mib ?? "—"} MiB</span></div></Card>;
 }
 
 function VmLink({ vm }: { vm: VmSummary }) {

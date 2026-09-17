@@ -126,6 +126,7 @@ async def react_vm_detail(request: Request) -> Response:
 
 
 @router.get("/hosts/{host_id}/vms/{domain_uuid}/config")
+@router.get("/manage/hosts/{host_id}/vms/{domain_uuid}/config")
 @router.get("/manage/hosts/{host_id}/vms/{domain_uuid}")
 async def react_vm_configuration(request: Request) -> Response:
     return _react_shell(request)

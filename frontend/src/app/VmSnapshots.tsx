@@ -68,7 +68,7 @@ export function VmSnapshots({ hostId, vmId, vmName, snapshots }: Props) {
 
   const columns: ColumnsType<VmSnapshotSummary> = [
     { title: "名称", dataIndex: "name", render: (name: string) => <strong>{name}</strong> },
-    { title: "状态", dataIndex: "state", render: snapshotState },
+    { title: "状态", dataIndex: "state", width: 120, render: snapshotState },
     { title: "创建时间", dataIndex: "creation_time", responsive: ["md"], render: (value) => formatDateTime(value) },
     { title: "当前", dataIndex: "current", width: 80, render: (value: boolean) => <StatusTag label={value ? "当前" : "历史"} tone={value ? "running" : "unknown"} /> },
     { title: "操作", width: 176, render: (_, item) => <Space size={8}><Button size="small" className="nx-btn-warning" onClick={() => open("revert", item)}>恢复</Button><Button size="small" className="nx-btn-danger" onClick={() => open("delete", item)}>删除</Button></Space> },

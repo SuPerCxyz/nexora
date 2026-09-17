@@ -4,7 +4,7 @@ import hmac
 
 from pwdlib import PasswordHash
 
-MINIMUM_PASSWORD_LENGTH = 12
+MINIMUM_PASSWORD_LENGTH = 8
 MAXIMUM_PASSWORD_LENGTH = 1_024
 
 _password_hash = PasswordHash.recommended()

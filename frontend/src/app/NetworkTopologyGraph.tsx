@@ -1,5 +1,5 @@
 import cytoscape from "cytoscape";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { NetworkEdge, NetworkNode } from "../api/network";
 import { designTokens } from "./designTokens";
@@ -22,15 +22,25 @@ const Y_SPACING = 100;
 
 export function NetworkTopologyGraph({ nodes, edges }: { nodes: NetworkNode[]; edges: NetworkEdge[] }) {
   const container = useRef<HTMLDivElement>(null);
+  const [themeVersion, setThemeVersion] = useState(0);
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeVersion((value) => value + 1));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     if (!container.current) return;
+    const computed = getComputedStyle(document.documentElement);
+    const edgeColor = computed.getPropertyValue("--neutral-400").trim() || designTokens.neutral400;
+    const labelBackground = computed.getPropertyValue("--background-card").trim() || designTokens.white;
+    const labelColor = computed.getPropertyValue("--text-primary").trim() || designTokens.textPrimary;
     const graph = cytoscape({
       container: container.current,
       elements: buildGraphElements(nodes, edges),
       style: [
         { selector: "node", style: { "background-color": (element) => nodeTypeColor[String(element.data("type"))] ?? designTokens.neutral, label: "data(label)", color: designTokens.white, "text-valign": "center", "text-halign": "center", "font-size": 11, width: 64, height: 64 } },
         { selector: "node[management = 'yes']", style: { "border-width": 4, "border-color": designTokens.warning } },
-        { selector: "edge", style: { width: 2, "line-color": designTokens.neutral400, "target-arrow-color": designTokens.neutral400, "target-arrow-shape": "triangle", "curve-style": "bezier", label: "data(relation_label)", "font-size": 9, "text-background-color": designTokens.white, "text-background-opacity": 1, "text-background-padding": "3px" } },
+        { selector: "edge", style: { width: 2, color: labelColor, "line-color": edgeColor, "target-arrow-color": edgeColor, "target-arrow-shape": "triangle", "curve-style": "bezier", label: "data(relation_label)", "font-size": 9, "text-background-color": labelBackground, "text-background-opacity": 1, "text-background-padding": "3px" } },
       ],
       layout: { name: "preset", padding: 24 },
     });
@@ -38,7 +48,7 @@ export function NetworkTopologyGraph({ nodes, edges }: { nodes: NetworkNode[]; e
     const resize = () => graph.resize();
     window.addEventListener("resize", resize);
     return () => { window.removeEventListener("resize", resize); tooltip(); graph.destroy(); };
-  }, [nodes, edges]);
+  }, [nodes, edges, themeVersion]);
   return <div ref={container} className="nx-network-graph" aria-label="网络拓扑图" />;
 }
 

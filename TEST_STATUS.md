@@ -7,10 +7,18 @@
   关机迁移、删除重命名、网卡配置、XML 历史回滚、创建页三源合并与操作闭环修复；
   前端视觉一致性/联动逻辑整改（Alert/按钮/表格/共享组件/筛选持久化/任务返回/轮询）；
   存储页面节点维度管理（节点选择器过滤池/卷并联动创建表单）；存储卷展示过滤
-  （`is_display_volume` 排除误标 raw 的普通文件）与使用状态（`in_use` 基于 VM 引用）
+  （`is_display_volume` 排除误标 raw 的普通文件）与使用状态（`in_use` 基于 VM 引用）；
+  顶部品牌区改用透明 PNG，Logo 宽度随高度按原始比例自适应
 - 自动化测试：437 个通过；另有 25 个 opt-in 真实集成参数用例
 - 集成环境：Rocky 9.7 嵌套 KVM，详见专项目录
-- 最近验证：2026-08-10 存储卷过滤与使用状态（后端 465 tests + 前端 24 tests + 部署）；
+- 最近验证：2026-09-16 页面节点移除（`kvm3`/`test` clean_temporary、`ubuntu2604-kvm` local_only，
+  三个任务 succeeded，页面节点列表为空，本地活动管理记录清理）；2026-09-16 管理员密码策略生产部署（镜像 `sha256:422a03e3...c396a41`，策略 8、
+  healthy、live/ready 200、SQLite `quick_check` ok）；2026-09-16 最新工作区生产部署（镜像 `sha256:01fcfc60...ef73c74`，healthy、
+  live/ready 200、SQLite `quick_check` ok）；部署前全站视觉 QA（前端 26 tests + typecheck + build + npm audit、React Shell
+  7 tests、25 路由/10 个 Light 视口 + Dark 桌面移动、真实安全弹层，0 overflow/error）；
+  2026-08-12 品牌区透明 Logo 与比例（前端 24 tests + typecheck + build、
+  React Shell 7 tests、1280/375px Browser QA、生产部署与健康验证）；
+  2026-08-10 存储卷过滤与使用状态（后端 465 tests + 前端 24 tests + 部署）；
   2026-08-10 存储节点维度（前端 23 tests + typecheck + build + 部署验证）；
   2026-08-07 移除登录限流（认证相关 24 tests PASS）+ 前端审计整改部署；
   后端 `uv run pytest -q` 通过；前端 21 tests + typecheck + build；ruff/mypy 通过
@@ -20,6 +28,16 @@
 
 | 日期 | 命令 | 结果 | 范围 |
 |---|---|---|---|
+| 2026-09-16 | `agent-browser` 页面节点移除：三台分别执行预览、节点名称确认和任务等待；SQLite/Host Key/页面交叉检查 | 部分验证 PASS；`kvm3`、`test` 使用 `clean_temporary` 成功且远端清单为 0；`ubuntu2604-kvm` 因 Host Key 不可信使用 `local_only` 成功；`hosts` 与本地活动管理记录为 0，Host Key 文件为空；审计/任务/命令日志/指标历史按保留策略存在；Ubuntu 远端临时实体未验证 | 节点移除与残留核对 |
+| 2026-09-16 | `docker compose build nexora`、`docker compose run --rm nexora nexora-ops backup`、`docker compose up -d nexora`、health/live/ready、`nexora-ops check` | PASS；镜像 `sha256:422a03e3...c396a41`；备份 `nexora-20260916T122546Z.tar.gz`；运行时策略为 8；healthy、8002、live/ready 200、SQLite `quick_check` ok；UID10001、非 privileged、无设备、无 Node.js；旧镜像 `nexora:rollback-password-policy-20260916T122506Z` 保留 | 密码策略生产部署 |
+| 2026-09-16 | `uv run pytest -q tests/auth tests/web/test_auth_flow.py`、Ruff、`npm --prefix frontend run typecheck && npm --prefix frontend test && npm --prefix frontend run build`、`npm --prefix frontend audit --omit=dev --audit-level=high`、`git diff --check` | PASS；认证/账户 20 tests；前端 26 tests、typecheck、生产构建、0 production vulnerabilities；Ruff 与 whitespace 检查通过 | 密码策略变更门禁 |
+| 2026-09-16 | `docker compose build nexora`、`docker compose run --rm nexora nexora-ops backup`、`docker compose up -d nexora`、health/live/ready、`nexora-ops check` | PASS；镜像 `sha256:01fcfc60...ef73c74`；备份 `nexora-20260916T114820Z.tar.gz`；healthy、8002、live/ready 200、SQLite `quick_check` ok；UID10001、非 privileged、无设备、无 Node.js；旧镜像 `nexora:rollback-deploy-20260916T114718Z` 保留 | 最新工作区生产部署 |
+| 2026-09-16 | `npm --prefix frontend run typecheck && npm --prefix frontend test && npm --prefix frontend run build`、`uv run pytest -q tests/web/test_react_shell.py`、Ruff、`git diff --check`、`npm --prefix frontend audit --omit=dev --audit-level=high` | PASS；前端 26 tests、typecheck、生产构建、0 production vulnerabilities；React Shell 7 tests；Ruff 与 whitespace 检查通过 | 部署前定向门禁 |
+| 2026-08-13 | `npm run typecheck && npm test && npm run build && npm audit --omit=dev --audit-level=high` | PASS；5 files / 26 tests，生产构建成功，0 vulnerabilities；仅有既有 antd vendor chunk >500 kB 提示 | 全站视觉 QA / 双主题 |
+| 2026-08-13 | `.venv/bin/python -m pytest -q tests/web/test_react_shell.py`、Ruff check/format、`git diff --check` | PASS；React Shell 7 tests；Ruff 与 whitespace 检查通过 | 深链接 / Python 变更 |
+| 2026-08-13 | agent-browser 隔离生产数据快照回归 | PASS；25 路由×10 Light 视口（250 次）+ 1440/390 Dark（50 次）；Drawer/Modal/Select/VM 与 Storage Dropdown、Tabs、5 Collapse 实际打开；最终 Body overflow、破图、JSON 404、Console/Page Error 均为 0 | Desktop/Tablet/Mobile / Light/Dark / Overlay |
+| 2026-08-12 | 品牌 Logo 生产部署验证 | PASS；旧镜像 `nexora:rollback-logo-20260812T154340Z`、备份 `nexora-20260812T154352Z.tar.gz`；新镜像 `sha256:215f5ce0...710c3` healthy，live/ready 200，quick_check ok，revision 0023，UID10001、非 privileged、无 Node/npm；Logo HTTP 200 且哈希一致，生产登录页 1280/375px 无溢出或页面错误 | 单容器/品牌资产 |
+| 2026-08-12 | `npm test`、`npm run typecheck`、`npm run build`、`.venv/bin/pytest -q tests/web/test_react_shell.py`、agent-browser | PASS；前端 24 tests、React Shell 7 tests；1280px Logo 40.81×30 / 字标 28px，375px Logo 35.38×26 / 字标 24px；均无 `width` 属性、横向溢出或页面错误 | 顶部品牌 Logo/字标比例与透明背景 |
 | 2026-08-10 | 存储卷过滤与使用状态 | PASS；后端 465 tests + ruff/mypy；前端 typecheck + 24 tests + build；备份 `nexora-20260810T163123Z.tar.gz`；healthy、live 200、quick_check ok；agent-browser 验证 openwrt.xml 不显示、qcow2 使用中、iso/img 未使用、1280/375px 无溢出 | 存储卷展示 |
 | 2026-08-10 | 存储节点维度部署验证 | PASS；前端 23 tests + typecheck + build；备份 `nexora-20260810T160240Z.tar.gz`；healthy、live/ready 200、quick_check ok；agent-browser 验证 kvm3 筛选与创建表单联动、全部节点恢复、1280/375px 无溢出 | 存储节点维度 |
 | 2026-08-07 | 移除登录限流定向 | PASS；认证相关 24 tests（auth service + auth flow + frontend security + session + navigation）；Ruff 通过 | 限流移除/审计保留 |

@@ -1,4 +1,4 @@
-# Nexora
+# <img src="static/nexora-logo.png" alt="Nexora" height="28" /> Nexora
 
 Elegant virtual infrastructure management.
 
