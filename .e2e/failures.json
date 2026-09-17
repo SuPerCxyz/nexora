@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "failures": [
+    {
+      "id": "FAIL-001",
+      "workflow_id": "workflow.vm.advanced-settings.001",
+      "feature_id": "vm.config.advanced",
+      "severity": "high",
+      "status": "resolved",
+      "resolved_at": "2026-09-17T00:29:20Z",
+      "resolution": "Advanced form now hydrates watchdog itco/reset and the XML updater preserves an unchanged watchdog in place.",
+      "retest_count": 1,
+      "last_retest_result": "passed",
+      "title": "高级配置表单未回填现有 Watchdog，未修改即保存会生成删除计划",
+      "preconditions": [
+        "authenticated",
+        "kvm2 ready",
+        "balloon-test-kvm2 is shutoff and persistent"
+      ],
+      "steps": [
+        "Open VM configuration and expand 高级配置",
+        "Observe parsed current configuration contains watchdog model itco/action reset",
+        "Observe form shows Watchdog unchecked and model i6300esb",
+        "Submit a preview with the untouched UI defaults"
+      ],
+      "expected": "An untouched form preserves existing advanced devices, or explicitly warns before removing them.",
+      "actual": "HTTP 200 preview diff removes <watchdog model=\"itco\" action=\"reset\"/>. The UI does not surface a preservation warning.",
+      "reproducible": true,
+      "reproduction_count": 1,
+      "console_errors": [],
+      "network_errors": [],
+      "screenshots": [
+        ".e2e/evidence/screenshots/vm-config-advanced-existing-watchdog.png",
+        ".e2e/evidence/screenshots/vm-config-advanced-form.png",
+        ".e2e/evidence/screenshots/vm-config-advanced-fixed.png"
+      ],
+      "traces": [],
+      "suspected_area": [
+        "frontend/src/app/VmConfigurationSections.tsx AdvancedConfiguration form initial values",
+        "watchdog model option compatibility for itco"
+      ],
+      "notes": "Preview-only reproduction; no apply request and no remote VM mutation. Backend accepts itco in existing XML read view but the form choices omit itco."
+    },
+    {
+      "id": "FAIL-002",
+      "workflow_id": "workflow.account.validation.001",
+      "feature_id": "account.update",
+      "severity": "medium",
+      "status": "resolved",
+      "resolved_at": "2026-09-17T00:29:20Z",
+      "resolution": "Ant Design validation rejections are handled as field validation and no longer replace the account page.",
+      "retest_count": 1,
+      "last_retest_result": "passed",
+      "title": "账户保存的前端校验异常被渲染成页面数据加载失败",
+      "preconditions": [
+        "authenticated",
+        "account page loaded"
+      ],
+      "steps": [
+        "Open 管理员账户",
+        "Leave 当前密码 empty",
+        "Click 保存账户"
+      ],
+      "expected": "Stay on the account form and show the required-field validation without a page-load error.",
+      "actual": "No network request is sent, but the page is replaced by 页面数据加载失败 and 账户保存失败; reopening the route is required to recover the form.",
+      "reproducible": true,
+      "reproduction_count": 1,
+      "console_errors": [],
+      "network_errors": [],
+      "screenshots": [
+        ".e2e/evidence/screenshots/account-empty-submit-error.png",
+        ".e2e/evidence/screenshots/account-validation-fixed.png"
+      ],
+      "traces": [],
+      "suspected_area": [
+        "frontend/src/app/AccountPage.tsx save() catch",
+        "Ant Design validation rejection is treated as Error/page state"
+      ],
+      "notes": "This matches the previously reported 页面数据加载失败 / 账户保存失败 symptom. A route reload recovers the account form."
+    }
+  ]
+}

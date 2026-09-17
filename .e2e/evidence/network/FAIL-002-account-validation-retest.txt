@@ -1,0 +1,9 @@
+Retest: 2026-09-17, deployed image sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd
+URL: /settings/account
+
+Action: click 保存账户 with 当前密码 empty.
+- URL remained /settings/account
+- current password field aria-invalid=true
+- 页面数据加载失败 present: false
+- POST requests after the action: none
+- browser remained on the account form and did not show a page-level error

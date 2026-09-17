@@ -902,3 +902,24 @@ OpenCode
 > 修复镜像 `sha256:536bc2e0...55adcb` 已部署；备份为
 > `/data/backups/nexora-20260801T081610Z.tar.gz`，回滚标签为
 > `nexora:pre-scroll-fix-20260801T161556`，正式容器 healthy、quick_check ok。
+
+> 2026-09-16 Autonomous Web E2E：运行 `20260916-220405`，通过已认证
+> `agent-browser` 对当前部署执行源码/运行时路由、资源、状态迁移和连续路径探索。
+> 重新添加的 `kvm2` 为 ready，刷新任务 22/22 完成并自动发现 33 台 VM、4 个 Pool、70
+> 个 Volume。高级配置的 CPU/内存/NUMA/CPU Pinning/Watchdog/vsock/cache/maxphysaddr
+> 合法预览返回 200，非法组合返回 422；VM XML、VNC、串口、快照、克隆、创建、存储、
+> 网络、媒体、任务、审计和认证路径均有运行时证据。最终 `balloon-test-kvm2` 保持
+> 关机、原磁盘已恢复、无活动任务、无 e2e 测试 VM/Volume。结果为
+> `completed_with_gaps`：`.e2e/final-report.md` 记录 FAIL-001（高级表单未回填
+> watchdog 会生成删除差异）、FAIL-002（账户校验异常渲染为页面数据加载失败）及
+> 未执行的真实破坏性生命周期/多节点/任务恢复缺口；未修改业务代码、未执行 Git 操作。
+
+> 2026-09-17 修复并复测：修复 `AccountPage` 将 Ant Design 字段校验误渲染为页面错误的问题；
+> 高级 VM 配置表单回填当前 Watchdog/vsock（兼容 `itco`），并将 Watchdog XML 改为相同配置
+> 不变、变更原位更新、明确关闭才删除。`uv run pytest -q tests/xml/test_advanced_devices.py`
+> 为 7 passed，相关 Web 为 12 passed，前端全量为 26 passed，typecheck/build/Ruff 均通过。
+> 生产部署备份 `/data/backups/nexora-20260917T002508Z.tar.gz`，正式镜像
+> `sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd`，容器 healthy、
+> `/live`/`/ready` 200、SQLite quick_check ok。浏览器复测账户空密码提交留在表单且无 POST；
+> Watchdog 显示 enabled/itco/reset，原样预览为 no-change 422，其他 vsock 变更无 Watchdog
+> 删除差异；目标 VM 仍关机、原 vda 和 itco/reset 保持，无活动任务。详见 `.e2e/final-report.md`。

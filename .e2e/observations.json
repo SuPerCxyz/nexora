@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "observations": [
+    {"id": "OBS-001", "type": "runtime_fact", "description": "kvm2 is registered as ready at kvm2.soocoo.xyz and the host detail page shows a large discovered VM inventory.", "related_features": ["host.list", "host.view", "vm.list"], "follow_up_required": true, "resolved": false},
+    {"id": "OBS-002", "type": "safety_boundary", "description": "Existing kvm2 VMs include running service-like names and many test/template names; do not mutate or delete them without a clearly identified safe fixture.", "related_features": ["vm.lifecycle", "vm.create", "vm.remove"], "follow_up_required": true, "resolved": false},
+    {"id": "OBS-003", "type": "coverage_gap", "description": "VM advanced settings can be explored read-only and through previews, but real apply/rollback needs a safe fixture and authoritative post-write verification.", "related_features": ["vm.config.cpu", "vm.config.memory", "vm.config.devices", "vm.config.network", "vm.config.history"], "follow_up_required": true, "resolved": false},
+    {"id": "OBS-004", "type": "possible_gap", "description": "Advanced form defaults were not hydrated from the parsed current advanced XML; kvm2 VM has watchdog itco/reset but form showed disabled and i6300esb.", "related_features": ["vm.config.advanced", "vm.config.history"], "follow_up_required": false, "resolved": true},
+    {"id": "OBS-005", "type": "safety_observation", "description": "Start, enable-autostart, and configuration device actions submit directly to the task queue; the page provides confirmation for normal shutdown and delete/rename previews but not for these state mutations.", "related_features": ["vm.lifecycle", "vm.config.devices"], "follow_up_required": true, "resolved": false},
+    {"id": "OBS-006", "type": "performance_observation", "description": "Storage volume preview took about 16 seconds; blank-disk VM preview about 60 seconds; platform-image VM preview about 60 seconds. All eventually returned 200.", "related_features": ["storage.view", "vm.create"], "follow_up_required": true, "resolved": false}
+  ]
+}

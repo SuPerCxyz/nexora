@@ -1,0 +1,16 @@
+Request: POST /internal/hosts/{kvm2-host-id}/vms/{balloon-test-kvm2-uuid}/configuration/preview
+Operation: advanced_devices
+Values represented by the untouched UI defaults: watchdog_enabled=false, vsock_mode=remove
+Response: HTTP 200 (preview only; no apply was sent)
+
+Relevant diff returned by the server:
+--- current.xml
++++ proposed.xml
+@@
+-    <watchdog model="itco" action="reset"/>
+
+The configuration page simultaneously displayed the current parsed configuration with
+watchdog model "itco" / action "reset", while the form showed Watchdog unchecked and
+defaulted the model to "i6300esb". Saving the untouched advanced form would therefore
+produce a plan that removes the existing watchdog. No apply or task submission was
+performed during this test.

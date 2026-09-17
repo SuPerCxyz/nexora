@@ -1,0 +1,18 @@
+VM: balloon-test-kvm2 (shutoff, existing resource)
+
+POST /configuration/save (invalid vsock CID 2 with explicit mode): HTTP 422
+Message: vsock CID must be between 3 and 4294967295
+
+POST /configuration/save (NUMA cell 0 references vCPU 2 with maximum 2): HTTP 422
+Message: NUMA cell 0 references vCPU 2 but maximum is 1
+
+POST /configuration/save (CPU pin id 2 with maximum 2): HTTP 422
+Message: vCPU pin id 2 exceeds maximum 1
+
+POST /configuration/save (maxphysaddr bits with passthrough mode): HTTP 422
+Message: maxphysaddr bits require emulate mode
+
+POST /configuration/save (CID 3 while vsock mode remove): HTTP 422
+Message: vsock CID is only valid in explicit mode
+
+All requests were rejected before task creation; no VM configuration was applied.

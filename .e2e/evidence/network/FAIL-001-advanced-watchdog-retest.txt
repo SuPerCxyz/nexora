@@ -1,0 +1,22 @@
+Retest: 2026-09-17, deployed image sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd
+URL: /hosts/75c60cfb-d72b-4821-b702-54e697399fdf/vms/d1ad0cf6-c5d7-44df-abeb-5b96f83de75b/config
+
+Runtime form hydration:
+- Watchdog switch: checked=true
+- Watchdog model: itco
+- Watchdog action: reset
+- vsock: remove
+
+Unchanged advanced preview (watchdog itco/reset, vsock remove):
+- HTTP status: 422
+- message: proposed VM configuration has no changes
+- watchdog deletion: false
+- no save/apply request was sent
+
+Preview with only another advanced setting changed (vsock auto):
+- HTTP status: 200
+- change_type: advanced_devices
+- watchdog deletion: false
+- watchdog addition: false
+- vsock change: true
+- no save/apply request was sent

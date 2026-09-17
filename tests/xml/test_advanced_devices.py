@@ -38,6 +38,34 @@ def test_advanced_devices_replace_only_owned_elements() -> None:
     assert document.root.find("./devices/{urn:vendor}device") is not None
 
 
+def test_advanced_devices_accept_libvirt_itco_watchdog() -> None:
+    document = LibvirtXmlDocument.parse(DOMAIN, expected_root="domain")
+    apply_advanced_device_change(
+        document,
+        AdvancedDeviceChange(watchdog_model="itco", watchdog_action="reset"),
+    )
+    watchdog = document.root.find("./devices/watchdog")
+    assert watchdog is not None
+    assert watchdog.get("model") == "itco"
+    assert watchdog.get("action") == "reset"
+
+
+def test_advanced_devices_keep_unchanged_watchdog_in_place() -> None:
+    document = LibvirtXmlDocument.parse(DOMAIN, expected_root="domain")
+    apply_advanced_device_change(
+        document,
+        AdvancedDeviceChange(watchdog_model="i6300esb", watchdog_action="reset"),
+    )
+    devices = document.root.find("./devices")
+    assert devices is not None
+    watchdog_positions = [index for index, item in enumerate(devices) if item.tag == "watchdog"]
+    assert watchdog_positions == [0]
+    watchdog = devices.find("watchdog")
+    assert watchdog is not None
+    assert watchdog.get("model") == "i6300esb"
+    assert watchdog.get("action") == "reset"
+
+
 def test_advanced_devices_support_explicit_removal() -> None:
     document = LibvirtXmlDocument.parse(DOMAIN, expected_root="domain")
     apply_advanced_device_change(document, AdvancedDeviceChange())

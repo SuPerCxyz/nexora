@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "calculation": {
+    "features": "counted from feature-inventory.json",
+    "states": "counted from state-graph.json",
+    "transitions": "counted from state-graph.json",
+    "workflows": "counted from workflows.json"
+  },
+  "summary": {
+    "features_discovered": 40,
+    "features_tested": 38,
+    "features_passed": 13,
+    "features_failed": 0,
+    "features_partial": 23,
+    "features_blocked": 2,
+    "states_discovered": 18,
+    "transitions_discovered": 15,
+    "transitions_tested": 14,
+    "workflows_generated": 15,
+    "workflows_executed": 13,
+    "crud_lifecycles_expected": 1,
+    "crud_lifecycles_tested": 0,
+    "negative_paths_expected": 4,
+    "negative_paths_tested": 3
+  },
+  "untested_features": ["task.cancel", "task.recover"],
+  "partial_features": [
+    "host.remove",
+    "vm.lifecycle",
+    "vm.config.cpu",
+    "vm.config.memory",
+    "vm.config.devices",
+    "vm.config.network",
+    "vm.config.advanced",
+    "vm.config.numa",
+    "vm.config.cputune",
+    "vm.config.history",
+    "vm.create",
+    "vm.snapshot",
+    "vm.clone",
+    "vm.migrate",
+    "storage.view"
+    ,"vm.rename",
+    "vm.remove",
+    "host.onboarding",
+    "storage.pool",
+    "storage.volume",
+    "media.copy",
+    "network.bridge",
+    "network.vlan"
+  ],
+  "untested_transitions": ["transition.vm.config.apply"],
+  "untested_high_risk_features": ["task.cancel", "task.recover"],
+  "partial_high_risk_features": [
+    "vm.config.cpu",
+    "vm.config.memory",
+    "vm.config.devices",
+    "vm.config.network",
+    "vm.config.advanced",
+    "vm.config.numa",
+    "vm.config.cputune",
+    "vm.create",
+    "vm.snapshot",
+    "vm.clone",
+    "vm.migrate",
+    "account.update"
+    ,"vm.remove",
+    "storage.pool",
+    "storage.volume",
+    "media.copy",
+    "network.bridge",
+    "network.vlan"
+  ],
+  "untested_mutation_continuity": [
+    "vm.config.cpu",
+    "vm.config.memory",
+    "vm.config.devices",
+    "vm.config.network",
+    "vm.config.advanced",
+    "vm.config.numa",
+    "vm.config.cputune",
+    "vm.snapshot",
+    "vm.clone",
+    "vm.migrate",
+    "account.update"
+    ,"vm.rename",
+    "vm.remove",
+    "storage.pool",
+    "storage.volume",
+    "media.copy",
+    "network.bridge",
+    "network.vlan"
+  ],
+  "missing_crud_lifecycles": ["virtual_machine"],
+  "missing_negative_paths": [
+    "repeat destructive mutation",
+    "deleted VM URL and browser-back behavior",
+    "configuration apply followed by refresh/revisit/rollback",
+    "successful account update with session rotation"
+  ],
+  "blocked_items": [
+    "Dedicated VM create/delete lifecycle requires an explicitly safe fixture; current kvm2 VMs are existing resources.",
+    "Successful account update requires a current-password input that is not exposed from the saved browser auth profile.",
+    "Task cancellation and interrupted-task recovery need a safe in-flight/interrupted fixture."
+  ],
+  "coverage_gaps": [
+    "No VM configuration apply/rollback persistence test was authorized against an existing VM.",
+    "No dedicated test fixture was created, so create/delete/search-deleted lifecycle is not complete.",
+    "Only one managed host exists, so cross-host migration and multi-node permission paths are unavailable.",
+    "Some remote previews are slow: storage about 16 seconds, VM create about 60 seconds, clone about 80 seconds.",
+    "Host onboarding success and task cancel/recovery need credentials or a safe task fixture."
+  ],
+  "retest": {
+    "run_at": "2026-09-17T00:29:20Z",
+    "resolved_failures": ["FAIL-001", "FAIL-002"],
+    "verified_workflows": [
+      "workflow.vm.advanced-settings.preview.001",
+      "workflow.account.validation.001"
+    ],
+    "deployment_image": "sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd"
+  },
+  "source_runtime_reconciliation": {
+    "source_only": ["page.initialize"],
+    "runtime_only": [],
+    "unreachable": ["/vms/new (404; not present in source route map)"],
+    "reconciled_reachable_primary_routes": true
+  }
+}

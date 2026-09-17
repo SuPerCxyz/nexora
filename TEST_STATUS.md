@@ -477,3 +477,38 @@ P7 真实 Rocky 指标、virtiofs、IPv6-only 和双栈启动已执行并通过�
 | 探测修复 | PASS；1 test | 工具探测不再用 env 包装，passwordless 节点 `command -v` 正常（断言命令不含 env） |
 | 后端全量 | PASS | `uv run pytest -q` 430 passed、25 skipped |
 | ubuntu2604-kvm 生产重探 | PASS | 节点 degraded→ready；tool.virsh/qemu-img/virt-install 等全部 required/optional_missing→normal |
+
+## Autonomous Web E2E（2026-09-16）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| 源码/运行时功能发现 | PASS with gaps | 40 个功能、18 个状态、15 个迁移、15 个工作流写入 `.e2e/`；主导航和 `/manage/.../config` 兼容路由可达 |
+| kvm2 自动发现与刷新 | PASS | `kvm2` ready；刷新任务 22/22；33 台 VM、4 个存储池、70 个存储卷 |
+| VM 高级配置合法预览 | PASS | CPU、内存、NUMA、CPU Pinning、Watchdog/vsock/cache/maxphysaddr 预览均 HTTP 200；未执行 apply |
+| VM 高级配置非法输入 | PASS | vsock CID、NUMA vCPU、CPU Pinning、maxphysaddr 组合均 HTTP 422，无任务创建 |
+| VM/存储/网络/媒体连续路径 | PARTIAL | 创建、快照、克隆、存储卷、VLAN 均展示预览；媒体扫描 3/3、凭据签发后已撤销；无真实创建/跨节点迁移 |
+| VM 控制台 | PASS | 运行 VM 的 VNC 与串口均连接并关闭，未发送输入 |
+| 认证恢复 | PASS | 登出后受保护路由回到 `/login`；重新登录后 kvm2 恢复；Session 超时刷新重定向已观察 |
+| 最终状态一致性 | PASS | balloon-test-kvm2 关机、原 `vda` 恢复、自动启动关闭、无活动任务、无 e2e VM/Volume |
+| FAIL-001 | OPEN / HIGH | 高级表单显示 watchdog `itco/reset` 但未回填，未改动保存预览会删除 watchdog |
+| FAIL-002 | OPEN / MEDIUM | 账户空当前密码提交无请求，却替换为“页面数据加载失败 / 账户保存失败” |
+| 自动化持久化状态 | PASS with gaps | `.e2e/run-state.json`、`discovery.json`、`feature-inventory.json`、`state-graph.json`、`workflows.json`、`coverage.json`、`failures.json`、`test-data.json`、`observations.json`、`final-report.md` 均为合法 JSON/报告 |
+
+证据与断点续测入口：`.e2e/run-state.json`。当前最终状态：
+`completed_with_gaps`。未使用现有 VM 完成真实删除/克隆/迁移或配置持久化测试，避免影响
+未明确授权的业务资源；任务取消/恢复、多角色权限和跨节点流程仍待安全夹具。
+
+## 修复复测（2026-09-17）
+
+| 验证 | 结果 | 说明 |
+|---|---|---|
+| Watchdog XML 单元回归 | PASS；7 passed | 支持 libvirt `itco`，相同配置原位保留，明确关闭才删除 |
+| 相关 Web 回归 | PASS；12 passed | `tests/web/test_vms.py tests/web/test_auth_flow.py` |
+| 前端回归 | PASS；26 tests | 账户字段校验与高级配置回填用例覆盖 |
+| 前端 typecheck/build | PASS | `tsc -b` 与 Vite production build |
+| 生产健康检查 | PASS | 镜像 `sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd`，容器 healthy，`/live`/`/ready` 200，SQLite quick_check ok |
+| Agent-browser 账户复测 | PASS | 空当前密码提交显示字段错误，页面不进入 PageError，未发 POST |
+| Agent-browser 高级配置复测 | PASS | 回填 enabled/itco/reset；原样预览 no-change 422，其他 vsock 预览无 Watchdog 删除/新增 |
+| 最终资源一致性 | PASS | kvm2 ready、33 VM，balloon-test-kvm2 关机、原 vda、itco/reset、无活动任务 |
+
+剩余 `completed_with_gaps` 项：真实 VM 配置 apply/刷新/回滚、创建删除生命周期、任务取消/恢复、第二节点迁移；均需要安全夹具或额外凭据。

@@ -1,0 +1,9 @@
+Runtime final-state verification: 2026-09-17, browser session nexora-fix-20260917
+Deployment image: sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd
+
+- Hosts: HTTP 200; one managed host kvm2, status ready.
+- VMs: HTTP 200; host-scoped total 33.
+- Target VM: balloon-test-kvm2, state shut off, active=false, persistent=true.
+- Target configuration: disk vda=/data/vm/system/balloon-test-kvm2.qcow2; watchdog itco/reset; vsock null.
+- Tasks: HTTP 200; active task count 0.
+- No VM configuration save/apply request was sent during this fix retest.

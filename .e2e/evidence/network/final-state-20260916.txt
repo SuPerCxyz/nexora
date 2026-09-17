@@ -1,0 +1,23 @@
+Captured: 2026-09-16T15:19:40Z
+Base URL: http://127.0.0.1:8002
+
+GET /internal/hosts?page=1&page_size=20
+- kvm2: ready
+
+GET /internal/vms?page=1&page_size=100
+- total: 33
+- balloon-test-kvm2: shut off, name unchanged
+
+GET balloon-test-kvm2/configuration
+- vda source: /data/vm/system/balloon-test-kvm2.qcow2
+- vda target: vda
+- advanced watchdog: itco/reset
+- NUMA cells: 0
+- CPU pinning entries: 0
+- configuration history items: 2 (created by the restoration test path)
+
+GET /internal/tasks
+- current pending/queued/running tasks: 0
+- recent restoration/scan tasks: succeeded
+
+Storage API data contains no e2e preview resource names. VM list contains no e2e-created VM.

@@ -88,3 +88,7 @@ P7 暂不包含 aarch64、Rocky 之外的 RHEL 系发行版、在线迁移、任
 
 详细阶段范围以 `docs/product/SCOPE.md` 为准。开始任务时将对应行改为
 `ANALYZING` 或 `IN_PROGRESS`，结束时填写准确日期与结果。
+
+## 2026-09-17 修复复测
+
+FAIL-001/FAIL-002 已修复并在 `nexora:latest` `sha256:ff2a77189e432348e1fa9da8499bac63aa4f841f9510d684e7f69222df3b14fd` 上通过浏览器复测。剩余缺口仍是安全夹具不足导致的 VM 配置真实 apply/回滚、创建删除生命周期、任务取消/恢复和多节点迁移，不因本次修复标记为完成。

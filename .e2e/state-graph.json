@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "states": [
+    {"id": "state.unauthenticated", "description": "No valid administrator Session"},
+    {"id": "state.authenticated", "description": "Administrator Session and CSRF token are valid"},
+    {"id": "state.host_exists", "resource": "host", "description": "A managed host exists in the local index"},
+    {"id": "state.host_not_exists", "resource": "host", "description": "No managed host exists"},
+    {"id": "state.host_ready", "resource": "host", "description": "Managed host is ready"},
+    {"id": "state.vm_exists", "resource": "virtual_machine", "description": "VM is indexed on a managed host"},
+    {"id": "state.vm_running", "resource": "virtual_machine", "description": "VM authoritative state is running"},
+    {"id": "state.vm_shutoff", "resource": "virtual_machine", "description": "VM authoritative state is shut off"},
+    {"id": "state.vm_config_visible", "resource": "virtual_machine", "description": "Advanced configuration sections are loaded"},
+    {"id": "state.vm_change_preview", "resource": "virtual_machine", "description": "A configuration or device plan has been previewed"},
+    {"id": "state.task_pending", "resource": "task", "description": "A task is pending or queued"},
+    {"id": "state.task_succeeded", "resource": "task", "description": "A task completed successfully"},
+    {"id": "state.task_failed", "resource": "task", "description": "A task completed with an error"},
+    {"id": "state.console_connected", "resource": "console", "description": "VNC or serial console session is connected"},
+    {"id": "state.vm_change_invalid", "resource": "virtual_machine", "description": "A configuration request is rejected by validation"},
+    {"id": "state.vm_disk_restored", "resource": "virtual_machine", "description": "The original VM disk is attached again after a test restoration"},
+    {"id": "state.page_error", "description": "A page reports a recoverable error"},
+    {"id": "state.page_empty", "description": "A page reports an empty resource set"}
+  ],
+  "transitions": [
+    {"id": "transition.auth.login", "from": ["state.unauthenticated"], "action": "auth.login", "to": ["state.authenticated"], "preconditions": [], "expected_effects": ["session_created"], "tested": true, "last_result": "passed"},
+    {"id": "transition.auth.logout", "from": ["state.authenticated"], "action": "auth.logout", "to": ["state.unauthenticated"], "preconditions": [], "expected_effects": ["session_revoked"], "tested": true, "last_result": "passed_protected_route_redirected"},
+    {"id": "transition.host.add", "from": ["state.authenticated", "state.host_not_exists"], "action": "host.add", "to": ["state.host_exists"], "preconditions": ["host_key_verified"], "expected_effects": ["host_indexed"], "tested": true, "last_result": "manual_kvm2_add_observed"},
+    {"id": "transition.host.remove", "from": ["state.authenticated", "state.host_exists"], "action": "host.remove", "to": ["state.host_not_exists"], "preconditions": ["removal_plan_confirmed"], "expected_effects": ["local_management_removed"], "tested": true, "last_result": "partial"},
+    {"id": "transition.vm.view", "from": ["state.authenticated", "state.host_ready", "state.vm_exists"], "action": "vm.view", "to": ["state.vm_exists"], "preconditions": [], "expected_effects": ["detail_visible"], "tested": true, "last_result": "passed"},
+    {"id": "transition.vm.config.view", "from": ["state.authenticated", "state.vm_exists"], "action": "vm.config.view", "to": ["state.vm_config_visible"], "preconditions": [], "expected_effects": ["five_sections_visible"], "tested": true, "last_result": "passed"},
+    {"id": "transition.vm.config.preview", "from": ["state.authenticated", "state.vm_config_visible"], "action": "vm.config.preview", "to": ["state.vm_change_preview"], "preconditions": ["valid_form"], "expected_effects": ["diff_visible"], "tested": true, "last_result": "valid_cpu_memory_numa_cputune_advanced_previews_200"},
+    {"id": "transition.vm.config.invalid", "from": ["state.authenticated", "state.vm_config_visible"], "action": "vm.config.invalid", "to": ["state.vm_change_invalid"], "preconditions": ["invalid_form"], "expected_effects": ["validation_error_without_task"], "tested": true, "last_result": "422_and_client_validation_observed"},
+    {"id": "transition.vm.config.apply", "from": ["state.vm_change_preview"], "action": "vm.config.apply", "to": ["state.task_pending"], "preconditions": ["explicit_confirmation"], "expected_effects": ["task_created"], "tested": false, "last_result": null},
+    {"id": "transition.task.complete", "from": ["state.task_pending"], "action": "task.complete", "to": ["state.task_succeeded"], "preconditions": [], "expected_effects": ["authoritative_state_refreshed"], "tested": true, "last_result": "refresh_scan_lifecycle_console_and_media_tasks_completed"},
+    {"id": "transition.task.failed", "from": ["state.task_pending"], "action": "task.failed", "to": ["state.task_failed"], "preconditions": [], "expected_effects": ["error_visible"], "tested": true, "last_result": "historical_failed_task_detail_visible"},
+    {"id": "transition.console.connected", "from": ["state.vm_running"], "action": "vm.console.open", "to": ["state.console_connected"], "preconditions": ["console_capability"], "expected_effects": ["console_session"], "tested": true, "last_result": "vnc_and_serial_connected"},
+    {"id": "transition.vm.start", "from": ["state.vm_shutoff"], "action": "vm.start", "to": ["state.vm_running"], "preconditions": ["vm_valid"], "expected_effects": ["running_state"], "tested": true, "last_result": "task_completed_and_restored"},
+    {"id": "transition.vm.stop", "from": ["state.vm_running"], "action": "vm.stop", "to": ["state.vm_shutoff"], "preconditions": ["vm_valid"], "expected_effects": ["shutoff_state"], "tested": true, "last_result": "task_completed_and_verified"},
+    {"id": "transition.vm.disk.restore", "from": ["state.vm_exists"], "action": "vm.disk.restore", "to": ["state.vm_disk_restored"], "preconditions": ["original_volume_available"], "expected_effects": ["vda_present_again"], "tested": true, "last_result": "task_completed_and_verified"}
+  ]
+}

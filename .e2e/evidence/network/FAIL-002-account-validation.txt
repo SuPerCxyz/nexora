@@ -1,0 +1,5 @@
+Page: /settings/account
+Action: Click 保存账户 with 当前密码 empty
+Observed network: no request captured after the click
+Observed page state: 页面数据加载失败 / 账户保存失败
+Recovery: reopening /settings/account loads the form again

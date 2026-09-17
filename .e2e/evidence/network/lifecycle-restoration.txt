@@ -1,0 +1,15 @@
+Existing VM used for UI path inspection: balloon-test-kvm2
+
+Start action task: fca9d2e0-cc8d-4b32-9e13-67025b5c5a1d, completed 3/3; VM became running.
+Restoration shutdown task: 2e8e2a81-a158-4d65-b277-4d9a600b6ca1, completed 3/3; VM returned to shut off.
+Enable autostart task: 85d37fe4-f75a-472f-ae52-a0f6d9a40cd8, completed 3/3.
+Restoration disable-autostart task: 2c6a4301-37e5-45ca-8ca5-82eae26f7678, completed 3/3.
+
+Final verification via /internal/vms: balloon-test-kvm2 state=shut off, name unchanged,
+advanced watchdog remains itco/reset, no e2e VM or volume exists.
+
+During device-page exploration, the existing vda was accidentally submitted through the
+direct "移除" action. Detach task ff6dfe64-4d50-4a54-9b6d-182a6a7c9046 completed.
+The same original volume was immediately reattached through the page; restoration task
+51bd52c3-0863-46ec-a758-2b21f84e8b55 completed 3/3 after the remote preflight.
+Final configuration verification shows vda -> /data/vm/system/balloon-test-kvm2.qcow2.

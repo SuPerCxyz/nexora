@@ -70,6 +70,11 @@ describe("Ant Design core application", () => {
     expect(screen.queryByLabelText("页面密度")).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox", { name: "全局使用等宽字体" })).not.toBeInTheDocument();
     expect(document.body).not.toHaveClass("nx-global-monospace", "nx-density-compact");
+
+    fireEvent.click(screen.getByRole("button", { name: "保存账户" }));
+    await waitFor(() => expect(screen.getByLabelText("当前密码")).toHaveAttribute("aria-invalid", "true"));
+    expect(screen.getByRole("heading", { name: "管理员账户" })).toBeInTheDocument();
+    expect(screen.queryByText("页面数据加载失败")).not.toBeInTheDocument();
   });
 
   it("navigates to the host list without a full reload", async () => {
@@ -363,7 +368,7 @@ describe("Ant Design core application", () => {
         base: { resource_id: "vm-1", generation: 3, persistent_hash: "a".repeat(64) },
         cpu: { current_vcpus: 4, maximum_vcpus: 4, sockets: 1, dies: 1, clusters: 1, cores: 4, threads: 1 },
         memory: { current_kib: 1048576, maximum_kib: 1048576, hugepages: false, locked: false, source_type: null, access_mode: null, allocation_mode: null, discard: false },
-        advanced: null,
+        advanced: { numa_cells: [], cpu_pinning: [], watchdog: { model: "itco", action: "reset" }, vsock: null },
         disks: [{ target: "vda", device: "disk", source: "/images/openwrt.img", bus: "virtio" }],
         storage_volumes: [],
         platform_isos: [],
@@ -379,6 +384,10 @@ describe("Ant Design core application", () => {
     expect(screen.getByText("磁盘与光驱")).toBeInTheDocument();
     expect(screen.getByText("直通设备与共享目录")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "保存 CPU" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "collapsed 高级配置" }));
+    expect(screen.getByRole("switch", { name: "启用 Watchdog" })).toBeChecked();
+    expect(screen.getByText("itco")).toBeInTheDocument();
   });
 
   it("renders the React task center with Chinese status tags", async () => {

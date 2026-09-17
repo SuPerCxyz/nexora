@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "pages": [
+    {"id": "page.initialize", "route": "/initialize", "name": "初始化", "discovered_by": ["source"], "requires_auth": false, "reachable": true},
+    {"id": "page.login", "route": "/login", "name": "登录", "discovered_by": ["source", "runtime"], "requires_auth": false, "reachable": true},
+    {"id": "page.overview", "route": "/", "name": "总览", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.hosts", "route": "/hosts", "name": "节点列表", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.host_new", "route": "/hosts/new", "name": "添加节点", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.host_detail", "route": "/hosts/{host_id}", "name": "节点详情", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.host_confirm", "route": "/hosts/{host_id}/confirm", "name": "Host Key 确认", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.vms", "route": "/vms", "name": "虚拟机列表", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.vm_detail", "route": "/hosts/{host_id}/vms/{vm_id}", "name": "虚拟机详情", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.vm_config", "route": "/hosts/{host_id}/vms/{vm_id}/config", "name": "虚拟机高级配置", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.vm_config_compat", "route": "/manage/hosts/{host_id}/vms/{vm_id}/config", "name": "虚拟机高级配置兼容地址", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.vm_create", "route": "/vms/create", "name": "创建虚拟机", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.storage", "route": "/storage", "name": "存储", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.media", "route": "/media", "name": "镜像", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.media_copy", "route": "/media/{media_id}/copy", "name": "镜像复制到节点", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.networks", "route": "/networks", "name": "网络", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.tasks", "route": "/tasks", "name": "任务", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.task_detail", "route": "/tasks/{task_id}", "name": "任务详情", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.audit", "route": "/audit", "name": "审计", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.account", "route": "/settings/account", "name": "管理员账户", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.ui_preview", "route": "/ui-preview", "name": "UI 状态预览", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true},
+    {"id": "page.not_found", "route": "/unknown", "name": "404", "discovered_by": ["source", "runtime"], "requires_auth": true, "reachable": true}
+  ],
+  "routes": [
+    "/initialize", "/login", "/", "/hosts", "/hosts/new", "/hosts/{host_id}", "/hosts/{host_id}/confirm", "/hosts/{host_id}/remove", "/vms", "/vms/create", "/vms/create/blank-disk", "/vms/create/platform-image", "/hosts/{host_id}/vms/{vm_id}", "/hosts/{host_id}/vms/{vm_id}/config", "/manage/hosts/{host_id}/vms/{vm_id}", "/manage/hosts/{host_id}/vms/{vm_id}/config", "/storage", "/media", "/media/{media_id}/copy", "/networks", "/tasks", "/tasks/{task_id}", "/audit", "/settings/account", "/ui-preview"
+  ],
+  "menus": ["总览", "节点", "虚拟机", "存储", "镜像", "网络", "任务", "审计", "设置"],
+  "resources": ["administrator", "host", "virtual_machine", "storage_pool", "storage_volume", "media_item", "network", "task", "audit_log"],
+  "api_endpoints": [
+    "/internal/session", "/internal/account", "/internal/logout", "/internal/overview", "/internal/hosts", "/internal/hosts/{host_id}", "/internal/hosts/onboarding", "/internal/hosts/{host_id}/scan", "/internal/hosts/{host_id}/host-key-confirmation", "/internal/vms", "/internal/hosts/{host_id}/vms/{vm_id}", "/internal/hosts/{host_id}/vms/{vm_id}/guest-agent", "/internal/hosts/{host_id}/vms/{vm_id}/console", "/internal/hosts/{host_id}/vms/{vm_id}/configuration", "/internal/hosts/{host_id}/vms/{vm_id}/configuration/preview", "/internal/hosts/{host_id}/vms/{vm_id}/configuration/save", "/internal/hosts/{host_id}/vms/{vm_id}/configuration/apply", "/internal/hosts/{host_id}/vms/{vm_id}/configuration/history", "/internal/hosts/{host_id}/vms/{vm_id}/configuration/rollback", "/internal/hosts/{host_id}/vms/{vm_id}/lifecycle", "/internal/hosts/{host_id}/vms/{vm_id}/remove/preview", "/internal/hosts/{host_id}/vms/{vm_id}/remove/apply", "/internal/hosts/{host_id}/vms/{vm_id}/snapshots/preview", "/internal/hosts/{host_id}/vms/{vm_id}/snapshots/apply", "/internal/hosts/{host_id}/vms/{vm_id}/clone/preview", "/internal/hosts/{host_id}/vms/{vm_id}/clone/apply", "/internal/hosts/{host_id}/vms/{vm_id}/migrate/preview", "/internal/hosts/{host_id}/vms/{vm_id}/migrate/apply", "/internal/vm-create/options", "/internal/vm-create/blank-disk/options", "/internal/vm-create/blank-disk/preview", "/internal/vm-create/platform-image/options", "/internal/vm-create/platform-image/preview", "/internal/storage", "/internal/storage/volumes/preview", "/internal/networks", "/internal/networks/vlan/preview", "/internal/media", "/internal/media/scan", "/internal/media/{media_id}/credentials", "/internal/media/credentials/{credential_id}/revoke", "/internal/tasks", "/internal/tasks/{task_id}", "/internal/audit"
+  ],
+  "permissions": [{"id": "administrator", "description": "single local administrator"}],
+  "feature_flags": ["react_preview", "react_core_pages"],
+  "unreachable_routes": ["/vms/new (404; not present in source route map)"],
+  "runtime_only_features": [],
+  "source_only_features": ["page.initialize"]
+}

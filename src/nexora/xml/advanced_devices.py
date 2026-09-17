@@ -7,7 +7,7 @@ from lxml import etree
 from nexora.xml.document import LibvirtXmlDocument
 from nexora.xml.errors import XmlStructureError
 
-WATCHDOG_MODELS = frozenset({"i6300esb", "ib700"})
+WATCHDOG_MODELS = frozenset({"i6300esb", "ib700", "itco"})
 WATCHDOG_ACTIONS = frozenset({"reset", "shutdown", "poweroff", "pause", "none"})
 CACHE_MODES = frozenset({"emulate", "passthrough", "disable"})
 
@@ -65,12 +65,17 @@ def apply_advanced_device_change(
 def _watchdog(root: etree._Element, change: AdvancedDeviceChange) -> None:
     devices = _devices(root)
     existing = devices.find("watchdog")
-    if existing is not None:
-        devices.remove(existing)
-    if change.watchdog_model is not None and change.watchdog_action is not None:
+    if change.watchdog_model is None or change.watchdog_action is None:
+        if existing is not None:
+            devices.remove(existing)
+        return
+    if existing is None:
         devices.append(
             etree.Element("watchdog", model=change.watchdog_model, action=change.watchdog_action)
         )
+        return
+    existing.set("model", change.watchdog_model)
+    existing.set("action", change.watchdog_action)
 
 
 def _vsock(root: etree._Element, change: AdvancedDeviceChange) -> None:

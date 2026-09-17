@@ -162,15 +162,41 @@ export function PeripheralConfiguration({ data, preview }: Props) {
 }
 
 export function AdvancedConfiguration({ data, preview }: Props) {
+  const watchdog = readWatchdog(data.advanced?.watchdog);
+  const vsock = readVsock(data.advanced?.vsock);
+  const watchdogModels = Array.from(new Set(["i6300esb", "ib700", "itco", ...(watchdog ? [watchdog.model] : [])]));
+  const initialValues = {
+    watchdog_enabled: watchdog !== null,
+    watchdog_model: watchdog?.model ?? "i6300esb",
+    watchdog_action: watchdog?.action ?? "reset",
+    vsock_mode: vsock === null ? "remove" : vsock.auto_cid ? "auto" : "explicit",
+    vsock_cid: vsock?.cid == null ? undefined : String(vsock.cid),
+  };
   return <Space orientation="vertical" size={12} className="nx-page-stack">
-    <Card title="Watchdog、vsock 与 CPU 高级参数"><Form layout="vertical" onFinish={(values) => preview("advanced_devices", values)}><div className="nx-form-grid"><Form.Item name="watchdog_enabled" label="启用 Watchdog" valuePropName="checked"><Switch /></Form.Item><Field name="watchdog_model" label="Watchdog model" values={["i6300esb", "ib700"]} initial="i6300esb" /><Field name="watchdog_action" label="Watchdog action" values={["reset", "shutdown", "poweroff", "pause", "none"]} initial="reset" /><Field name="vsock_mode" label="vsock" values={["remove", "auto", "explicit"]} initial="remove" /><Form.Item name="vsock_cid" label="vsock CID"><Input /></Form.Item><Field name="cache_mode" label="CPU cache mode" values={["emulate", "passthrough", "disable"]} /><Field name="maxphysaddr_mode" label="maxphysaddr mode" values={["emulate", "passthrough"]} /><Form.Item name="maxphysaddr_bits" label="maxphysaddr bits"><Input /></Form.Item></div><Button htmlType="submit" type="primary" disabled={!data.vm.persistent}>保存高级配置</Button></Form></Card>
+    <Card title="Watchdog、vsock 与 CPU 高级参数"><Form layout="vertical" initialValues={initialValues} onFinish={(values) => preview("advanced_devices", values)}><div className="nx-form-grid"><Form.Item name="watchdog_enabled" label="启用 Watchdog" valuePropName="checked"><Switch /></Form.Item><Field name="watchdog_model" label="Watchdog model" values={watchdogModels} /><Field name="watchdog_action" label="Watchdog action" values={["reset", "shutdown", "poweroff", "pause", "none"]} /><Field name="vsock_mode" label="vsock" values={["remove", "auto", "explicit"]} /><Form.Item name="vsock_cid" label="vsock CID"><Input /></Form.Item><Field name="cache_mode" label="CPU cache mode" values={["emulate", "passthrough", "disable"]} /><Field name="maxphysaddr_mode" label="maxphysaddr mode" values={["emulate", "passthrough"]} /><Form.Item name="maxphysaddr_bits" label="maxphysaddr bits"><Input /></Form.Item></div><Button htmlType="submit" type="primary" disabled={!data.vm.persistent}>保存高级配置</Button></Form></Card>
     <Card title="NUMA 拓扑"><Form layout="vertical" onFinish={(values) => preview("numa", numaValues(String(values.cells ?? "")))}><Form.Item name="cells" label="NUMA 单元" tooltip="每行：vCPU 范围 | 内存 KiB | 访问模式"><Input.TextArea rows={4} placeholder={"0-3 | 4194304 | shared\n4-7 | 4194304 | shared"} /></Form.Item><Button htmlType="submit" type="primary" disabled={!data.vm.persistent || data.vm.active}>保存 NUMA</Button></Form></Card>
     <Card title="CPU Pinning"><Form layout="vertical" onFinish={(values) => preview("cputune", pinningValues(String(values.pins ?? ""), String(values.emulator_cpuset ?? "")))}><Form.Item name="pins" label="vCPU 绑定" tooltip="每行：vCPU 编号 | 节点 CPU 范围"><Input.TextArea rows={4} placeholder={"0 | 0-1\n1 | 2-3"} /></Form.Item><Form.Item name="emulator_cpuset" label="模拟器线程 CPU 范围"><Input placeholder="例如 0-3" /></Form.Item><Button htmlType="submit" type="primary" disabled={!data.vm.persistent || data.vm.active}>保存 CPU Pinning</Button></Form></Card>
     <Card title="当前高级配置"><Typography.Paragraph type="secondary">以下内容来自安全解析后的 Domain XML。</Typography.Paragraph>{data.advanced ? <pre className="nx-code nx-code-light"><code>{JSON.stringify(data.advanced, null, 2)}</code></pre> : <StatusTag label="未配置" tone="unknown" />}</Card>
   </Space>;
 }
 
-function Field({ name, label, values, initial }: { name: string; label: string; values: string[]; initial?: string }) { return <Form.Item name={name} label={label} initialValue={initial}><Select allowClear options={values.map((value) => ({ value, label: value }))} /></Form.Item>; }
+function Field({ name, label, values }: { name: string; label: string; values: string[] }) { return <Form.Item name={name} label={label}><Select allowClear options={values.map((value) => ({ value, label: value }))} /></Form.Item>; }
+
+function readWatchdog(value: unknown): { model: string; action: string } | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  return typeof record.model === "string" && typeof record.action === "string"
+    ? { model: record.model, action: record.action }
+    : null;
+}
+
+function readVsock(value: unknown): { auto_cid: boolean; cid: number | null } | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  return typeof record.auto_cid === "boolean" && (record.cid === null || typeof record.cid === "number")
+    ? { auto_cid: record.auto_cid, cid: record.cid }
+    : null;
+}
 
 function numaValues(text: string): Record<string, unknown> {
   const values: Record<string, unknown> = {};

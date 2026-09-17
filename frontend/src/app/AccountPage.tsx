@@ -27,7 +27,11 @@ export function AccountPage() {
       const values = await form.validateFields();
       window.location.assign((await updateAccount({ ...values, density: "comfortable", global_monospace: false })).redirect);
     }
-    catch (caught) { setError(caught instanceof Error ? caught : new Error("账户保存失败")); setSaving(false); }
+    catch (caught) {
+      setSaving(false);
+      if (isFormValidationError(caught)) return;
+      setError(caught instanceof Error ? caught : new Error("账户保存失败"));
+    }
   }
   async function signOut() {
     try { window.location.assign((await logout()).redirect); }
@@ -52,6 +56,10 @@ export function AccountPage() {
     </Card>
     <Card title="登录历史"><Table className="nx-responsive-table" rowKey={(item) => `${item.occurred_at}-${item.remote_address}`} columns={historyColumns} dataSource={data.login_history} pagination={false} tableLayout="fixed" /></Card>
   </Space>;
+}
+
+function isFormValidationError(value: unknown): boolean {
+  return typeof value === "object" && value !== null && "errorFields" in value;
 }
 
 const historyColumns: ColumnsType<LoginAttempt> = [

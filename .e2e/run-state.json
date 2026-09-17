@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "20260917-002920-fix",
+  "parent_run_id": "20260916-220405",
+  "status": "completed_with_gaps",
+  "phase": "report",
+  "started_at": "2026-09-16T14:04:05Z",
+  "updated_at": "2026-09-17T00:29:20Z",
+  "base_url": "http://127.0.0.1:8002",
+  "current_page": "/hosts/75c60cfb-d72b-4821-b702-54e697399fdf/vms/d1ad0cf6-c5d7-44df-abeb-5b96f83de75b/config",
+  "current_workflow_id": null,
+  "last_completed_workflow_id": "workflow.account.validation.001",
+  "resume_hint": "FAIL-001/FAIL-002 fixed and retested. If resumed, obtain an explicitly safe VM/task fixture before destructive persistence tests.",
+  "blocking_reason": "completed_with_gaps: no open functional failures; no safe dedicated VM fixture, no exposed current password for successful rotation, and no safe in-flight task fixture."
+}
